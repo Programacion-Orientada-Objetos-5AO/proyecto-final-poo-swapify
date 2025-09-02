@@ -1,4 +1,4 @@
-package ar.edu.huergo.swapify.mapper;
+package ar.edu.huergo.swapify.mapper.publicacion;
 
 import java.util.ArrayList;
 import java.util.List;
