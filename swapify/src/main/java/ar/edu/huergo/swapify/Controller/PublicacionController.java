@@ -6,8 +6,8 @@ import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import ar.edu.huergo.swapify.dto.publicacion.CrearPublicacionDTO;
 import ar.edu.huergo.swapify.dto.publicacion.MostrarPublicacionDTO;
 import ar.edu.huergo.swapify.dto.publicacion.ReportePublicacionesDTO;
@@ -26,14 +26,12 @@ public class PublicacionController {
     private final PublicacionMapper publicacionMapper;
 
     @PostMapping
-    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<MostrarPublicacionDTO> crearPublicacion(@Valid @RequestBody CrearPublicacionDTO dto) {
         Publicacion publicacion = publicacionService.crearPublicacion(dto);
         return ResponseEntity.ok(publicacionMapper.toDTO(publicacion));
     }
 
     @GetMapping("/reporte")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ReportePublicacionesDTO> reportePorFecha(
             @RequestParam("fecha") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
 

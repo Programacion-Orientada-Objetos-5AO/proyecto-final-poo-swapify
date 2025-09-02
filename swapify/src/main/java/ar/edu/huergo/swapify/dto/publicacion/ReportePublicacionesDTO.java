@@ -11,6 +11,6 @@ import lombok.Data;
 @AllArgsConstructor
 public class ReportePublicacionesDTO {
     private long cantidadPublicaciones;
-    private BigDecimal sumaPrecios; // suma de precios referenciales del día
+    private BigDecimal sumaPrecios; 
     private List<MostrarPublicacionDTO> publicaciones;
 }

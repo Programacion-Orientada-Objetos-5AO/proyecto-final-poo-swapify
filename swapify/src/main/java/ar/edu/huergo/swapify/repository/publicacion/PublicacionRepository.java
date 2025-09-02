@@ -16,11 +16,9 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
 
     List<Publicacion> findByFechaPublicacionBetween(LocalDateTime inicio, LocalDateTime fin);
 
-    @Query("""
-           select coalesce(sum(p.precio), 0)
-           from Publicacion p
-           where p.fechaPublicacion between :inicio and :fin
-           """)
+    @Query("select coalesce(sum(p.precio), 0) " +
+           "from Publicacion p " +
+           "where p.fechaPublicacion between :inicio and :fin")
     BigDecimal sumaPreciosEntre(@Param("inicio") LocalDateTime inicio,
                                 @Param("fin") LocalDateTime fin);
 }
