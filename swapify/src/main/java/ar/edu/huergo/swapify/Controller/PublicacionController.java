@@ -25,12 +25,28 @@ public class PublicacionController {
     private final PublicacionService publicacionService;
     private final PublicacionMapper publicacionMapper;
 
+    // POST /api/publicaciones  -> crea una publicación
     @PostMapping
     public ResponseEntity<MostrarPublicacionDTO> crearPublicacion(@Valid @RequestBody CrearPublicacionDTO dto) {
         Publicacion publicacion = publicacionService.crearPublicacion(dto);
         return ResponseEntity.ok(publicacionMapper.toDTO(publicacion));
     }
 
+    // GET /api/publicaciones  -> lista todas las publicaciones
+    @GetMapping
+    public ResponseEntity<List<MostrarPublicacionDTO>> listarTodas() {
+        List<Publicacion> entidades = publicacionService.listarTodas();
+        return ResponseEntity.ok(publicacionMapper.toDTOList(entidades));
+    }
+
+    // GET /api/publicaciones/{id}  -> obtiene una publicación por id
+    @GetMapping("/{id}")
+    public ResponseEntity<MostrarPublicacionDTO> obtenerPorId(@PathVariable Long id) {
+        Publicacion p = publicacionService.obtenerPorId(id);
+        return ResponseEntity.ok(publicacionMapper.toDTO(p));
+    }
+
+    // GET /api/publicaciones/reporte?fecha=YYYY-MM-DD  -> reporte por fecha
     @GetMapping("/reporte")
     public ResponseEntity<ReportePublicacionesDTO> reportePorFecha(
             @RequestParam("fecha") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
