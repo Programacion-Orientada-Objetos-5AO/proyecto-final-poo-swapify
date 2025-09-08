@@ -23,32 +23,52 @@ public class PublicacionService {
     private final PublicacionMapper publicacionMapper;
 
     public Publicacion crearPublicacion(CrearPublicacionDTO dto) {
-        if (dto == null) throw new IllegalArgumentException("Datos de publicación inválidos");
-        Publicacion p = publicacionMapper.toEntity(dto);
-        return publicacionRepository.save(p);
+        try {
+            if (dto == null) throw new IllegalArgumentException("Datos de publicación inválidos");
+            Publicacion p = publicacionMapper.toEntity(dto);
+            return publicacionRepository.save(p);
+        } catch (Exception e) {
+            throw new RuntimeException("Error al crear publicación: " + e.getMessage(), e);
+        }
     }
 
     // NUEVO
     public List<Publicacion> listarTodas() {
-        return publicacionRepository.findAll();
+        try {
+            return publicacionRepository.findAll();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al listar publicaciones: " + e.getMessage(), e);
+        }
     }
 
     // NUEVO
     public Publicacion obtenerPorId(Long id) {
-        return publicacionRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Publicación no encontrada"));
+        try {
+            return publicacionRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Publicación no encontrada"));
+        } catch (Exception e) {
+            throw new RuntimeException("Error al obtener publicación por ID: " + e.getMessage(), e);
+        }
     }
 
     public List<Publicacion> obtenerPublicacionesDeFecha(LocalDate fecha) {
-        LocalDateTime inicio = fecha.atStartOfDay();
-        LocalDateTime fin = fecha.atTime(LocalTime.MAX);
-        return publicacionRepository.findByFechaPublicacionBetween(inicio, fin);
+        try {
+            LocalDateTime inicio = fecha.atStartOfDay();
+            LocalDateTime fin = fecha.atTime(LocalTime.MAX);
+            return publicacionRepository.findByFechaPublicacionBetween(inicio, fin);
+        } catch (Exception e) {
+            throw new RuntimeException("Error al obtener publicaciones por fecha: " + e.getMessage(), e);
+        }
     }
 
     public BigDecimal sumaPreciosEnFecha(LocalDate fecha) {
-        LocalDateTime inicio = fecha.atStartOfDay();
-        LocalDateTime fin = fecha.atTime(LocalTime.MAX);
-        BigDecimal suma = publicacionRepository.sumaPreciosEntre(inicio, fin);
-        return (suma != null) ? suma : BigDecimal.ZERO;
+        try {
+            LocalDateTime inicio = fecha.atStartOfDay();
+            LocalDateTime fin = fecha.atTime(LocalTime.MAX);
+            BigDecimal suma = publicacionRepository.sumaPreciosEntre(inicio, fin);
+            return (suma != null) ? suma : BigDecimal.ZERO;
+        } catch (Exception e) {
+            throw new RuntimeException("Error al sumar precios en fecha: " + e.getMessage(), e);
+        }
     }
 }

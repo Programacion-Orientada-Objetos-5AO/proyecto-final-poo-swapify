@@ -18,21 +18,33 @@ public class UsuarioService {
     private final UsuarioMapper usuarioMapper;
 
     public Usuario crear(CrearUsuarioDTO dto) {
-        if (dto == null) throw new IllegalArgumentException("Datos de usuario inválidos");
-        if (usuarioRepository.existsByMailIgnoreCase(dto.getMail())) {
-            throw new IllegalArgumentException("Ya existe un usuario con ese mail");
+        try {
+            if (dto == null) throw new IllegalArgumentException("Datos de usuario inválidos");
+            if (usuarioRepository.existsByMailIgnoreCase(dto.getMail())) {
+                throw new IllegalArgumentException("Ya existe un usuario con ese mail");
+            }
+            Usuario u = usuarioMapper.toEntity(dto);
+            // Más adelante: u.setContraseña(encoder.encode(dto.getContraseña()));
+            return usuarioRepository.save(u);
+        } catch (Exception e) {
+            throw new RuntimeException("Error al crear usuario: " + e.getMessage(), e);
         }
-        Usuario u = usuarioMapper.toEntity(dto);
-        // Más adelante: u.setContraseña(encoder.encode(dto.getContraseña()));
-        return usuarioRepository.save(u);
     }
 
     public List<Usuario> listarTodos() {
-        return usuarioRepository.findAll();
+        try {
+            return usuarioRepository.findAll();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al listar usuarios: " + e.getMessage(), e);
+        }
     }
 
     public Usuario obtenerPorId(Long id) {
-        return usuarioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+        try {
+            return usuarioRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+        } catch (Exception e) {
+            throw new RuntimeException("Error al obtener usuario por ID: " + e.getMessage(), e);
+        }
     }
 }

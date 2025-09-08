@@ -1,4 +1,4 @@
-package ar.edu.huergo.swapify.Controller;
+package ar.edu.huergo.swapify.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,6 +14,7 @@ import ar.edu.huergo.swapify.dto.publicacion.ReportePublicacionesDTO;
 import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
 import ar.edu.huergo.swapify.mapper.publicacion.PublicacionMapper;
 import ar.edu.huergo.swapify.service.publicacion.PublicacionService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -28,38 +29,57 @@ public class PublicacionController {
     // POST /api/publicaciones  -> crea una publicación
     @PostMapping
     public ResponseEntity<MostrarPublicacionDTO> crearPublicacion(@Valid @RequestBody CrearPublicacionDTO dto) {
-        Publicacion publicacion = publicacionService.crearPublicacion(dto);
-        return ResponseEntity.ok(publicacionMapper.toDTO(publicacion));
+        try {
+            Publicacion publicacion = publicacionService.crearPublicacion(dto);
+            return ResponseEntity.ok(publicacionMapper.toDTO(publicacion));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // GET /api/publicaciones  -> lista todas las publicaciones
     @GetMapping
     public ResponseEntity<List<MostrarPublicacionDTO>> listarTodas() {
-        List<Publicacion> entidades = publicacionService.listarTodas();
-        return ResponseEntity.ok(publicacionMapper.toDTOList(entidades));
+        try {
+            List<Publicacion> entidades = publicacionService.listarTodas();
+            return ResponseEntity.ok(publicacionMapper.toDTOList(entidades));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // GET /api/publicaciones/{id}  -> obtiene una publicación por id
     @GetMapping("/{id}")
     public ResponseEntity<MostrarPublicacionDTO> obtenerPorId(@PathVariable Long id) {
-        Publicacion p = publicacionService.obtenerPorId(id);
-        return ResponseEntity.ok(publicacionMapper.toDTO(p));
+        try {
+            Publicacion p = publicacionService.obtenerPorId(id);
+            return ResponseEntity.ok(publicacionMapper.toDTO(p));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // GET /api/publicaciones/reporte?fecha=YYYY-MM-DD  -> reporte por fecha
     @GetMapping("/reporte")
     public ResponseEntity<ReportePublicacionesDTO> reportePorFecha(
             @RequestParam("fecha") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        try {
+            List<Publicacion> publicaciones = publicacionService.obtenerPublicacionesDeFecha(fecha);
+            BigDecimal sumaPreciosReferenciales = publicacionService.sumaPreciosEnFecha(fecha);
+            List<MostrarPublicacionDTO> publicacionesDTO = publicacionMapper.toDTOList(publicaciones);
 
-        List<Publicacion> publicaciones = publicacionService.obtenerPublicacionesDeFecha(fecha);
-        BigDecimal sumaPreciosReferenciales = publicacionService.sumaPreciosEnFecha(fecha);
-        List<MostrarPublicacionDTO> publicacionesDTO = publicacionMapper.toDTOList(publicaciones);
-
-        ReportePublicacionesDTO reporte = new ReportePublicacionesDTO(
-                publicaciones.size(),
-                sumaPreciosReferenciales,
-                publicacionesDTO
-        );
-        return ResponseEntity.ok(reporte);
+            ReportePublicacionesDTO reporte = new ReportePublicacionesDTO(
+                    publicaciones.size(),
+                    sumaPreciosReferenciales,
+                    publicacionesDTO
+            );
+            return ResponseEntity.ok(reporte);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }
