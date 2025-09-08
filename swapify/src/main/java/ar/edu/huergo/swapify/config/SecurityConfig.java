@@ -15,10 +15,15 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/publicaciones/**").permitAll()
-                .anyRequest().permitAll()  // Permitir todo por simplicidad
+                .anyRequest().permitAll()
             )
-            .csrf().disable();  // Deshabilitar CSRF para evitar problemas con Postman
+            .csrf(csrf -> csrf.disable());
 
         return http.build();
+    }
+
+    @Bean
+    public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
     }
 }
