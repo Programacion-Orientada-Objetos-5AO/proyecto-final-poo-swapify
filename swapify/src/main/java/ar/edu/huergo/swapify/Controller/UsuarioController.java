@@ -1,4 +1,4 @@
-package ar.edu.huergo.swapify.controller;
+package ar.edu.huergo.swapify.Controller;
 
 import ar.edu.huergo.swapify.dto.usuario.CrearUsuarioDTO;
 import ar.edu.huergo.swapify.dto.usuario.MostrarUsuarioDTO;
