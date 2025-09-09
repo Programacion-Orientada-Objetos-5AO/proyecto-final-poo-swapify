@@ -1,4 +1,4 @@
-package ar.edu.huergo.swapify.Controller;
+package ar.edu.huergo.swapify.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

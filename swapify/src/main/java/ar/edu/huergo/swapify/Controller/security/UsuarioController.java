@@ -1,4 +1,4 @@
-package ar.edu.huergo.swapify.Controller.security;
+package ar.edu.huergo.swapify.controller.security;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package ar.edu.huergo.swapify.Controller;
+package ar.edu.huergo.swapify.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

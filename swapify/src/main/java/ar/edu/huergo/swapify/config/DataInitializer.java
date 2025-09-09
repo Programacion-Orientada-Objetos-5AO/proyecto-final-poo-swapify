@@ -22,18 +22,18 @@ public class DataInitializer {
             Rol admin = rolRepository.findByNombre("ADMIN").orElseGet(() -> rolRepository.save(new Rol("ADMIN")));
             Rol cliente = rolRepository.findByNombre("CLIENTE").orElseGet(() -> rolRepository.save(new Rol("CLIENTE")));
 
-            if (usuarioRepository.findByUsername("admin@restaurante.lcarera.edu.ar").isEmpty()) {
+            if (usuarioRepository.findByUsername("admin@huergo.edu.ar").isEmpty()) {
                 String adminPassword = "AdminSuperSegura@123";
                 PasswordValidator.validate(adminPassword);
-                Usuario u = new Usuario("admin@restaurante.lcarera.edu.ar", encoder.encode(adminPassword));
+                Usuario u = new Usuario("admin@huergo.edu.ar", encoder.encode(adminPassword));
                 u.setRoles(Set.of(admin));
                 usuarioRepository.save(u);
             }
 
-            if (usuarioRepository.findByUsername("cliente@restaurante.lcarera.edu.ar").isEmpty()) {
+            if (usuarioRepository.findByUsername("cliente@huergo.edu.ar").isEmpty()) {
                 String clientePassword = "ClienteSuperSegura@123";
                 PasswordValidator.validate(clientePassword);
-                Usuario u = new Usuario("cliente@restaurante.lcarera.edu.ar", encoder.encode(clientePassword));
+                Usuario u = new Usuario("cliente@huergo.edu.ar", encoder.encode(clientePassword));
                 u.setRoles(Set.of(cliente));
                 usuarioRepository.save(u);
             }
