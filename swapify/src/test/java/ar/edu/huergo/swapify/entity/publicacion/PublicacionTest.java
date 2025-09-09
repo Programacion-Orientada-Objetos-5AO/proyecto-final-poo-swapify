@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
+import ar.edu.huergo.swapify.entity.security.Usuario;
+
 public class PublicacionTest {
 
     @Test
@@ -31,7 +33,8 @@ public class PublicacionTest {
     @Test
     public void testAllArgsConstructor() {
         LocalDateTime fecha = LocalDateTime.of(2023, 2, 2, 15, 30);
-        Publicacion publicacion = new Publicacion(2L, "Mesa", new BigDecimal("200.00"), "Mesa de madera", "Silla", fecha);
+        Usuario usuario = new Usuario("test@example.com", "password");
+        Publicacion publicacion = new Publicacion(2L, "Mesa", new BigDecimal("200.00"), "Mesa de madera", "Silla", fecha, usuario);
 
         assertEquals(2L, publicacion.getId());
         assertEquals("Mesa", publicacion.getNombre());
@@ -39,6 +42,7 @@ public class PublicacionTest {
         assertEquals("Mesa de madera", publicacion.getDescripcion());
         assertEquals("Silla", publicacion.getObjetoACambiar());
         assertEquals(fecha, publicacion.getFechaPublicacion());
+        assertEquals(usuario, publicacion.getUsuario());
     }
 
     @Test

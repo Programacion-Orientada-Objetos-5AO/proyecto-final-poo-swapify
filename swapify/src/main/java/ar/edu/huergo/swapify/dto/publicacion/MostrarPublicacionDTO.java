@@ -15,4 +15,5 @@ public class MostrarPublicacionDTO {
     private String descripcion;
     private String objetoACambiar;
     private LocalDateTime fechaPublicacion;
+    private String usuarioUsername;
 }

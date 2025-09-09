@@ -1,10 +1,12 @@
 package ar.edu.huergo.swapify.entity.security;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,10 +16,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 @Entity
 @Data
@@ -47,10 +52,11 @@ public class Usuario {
     )
     private Set<Rol> roles = new HashSet<>();
 
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Publicacion> publicaciones = new ArrayList<>();
+
     public Usuario(String username, String password) {
         this.username = username;
         this.password = password;
     }
 }
-
-

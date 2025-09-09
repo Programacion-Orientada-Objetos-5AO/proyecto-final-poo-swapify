@@ -3,8 +3,10 @@ package ar.edu.huergo.swapify.entity.publicacion;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import ar.edu.huergo.swapify.entity.security.Usuario;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -39,6 +41,11 @@ public class Publicacion {
 
     @Column(name = "fecha_publicacion", nullable = false, updatable = false)
     private LocalDateTime fechaPublicacion;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    @NotNull(message = "El usuario es obligatorio")
+    private Usuario usuario;
 
     @PrePersist
     public void prePersist() {

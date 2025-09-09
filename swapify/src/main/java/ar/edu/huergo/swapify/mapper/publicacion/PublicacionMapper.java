@@ -23,7 +23,8 @@ public class PublicacionMapper {
                 publicacion.getPrecio(),
                 publicacion.getDescripcion(),
                 publicacion.getObjetoACambiar(),
-                publicacion.getFechaPublicacion()
+                publicacion.getFechaPublicacion(),
+                publicacion.getUsuario() != null ? publicacion.getUsuario().getUsername() : null
         );
     }
 

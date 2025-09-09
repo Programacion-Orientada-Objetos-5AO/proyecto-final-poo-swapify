@@ -12,11 +12,13 @@ import ar.edu.huergo.swapify.dto.publicacion.CrearPublicacionDTO;
 import ar.edu.huergo.swapify.dto.publicacion.MostrarPublicacionDTO;
 import ar.edu.huergo.swapify.dto.publicacion.ReportePublicacionesDTO;
 import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
+import ar.edu.huergo.swapify.entity.security.Usuario;
 import ar.edu.huergo.swapify.mapper.publicacion.PublicacionMapper;
 import ar.edu.huergo.swapify.service.publicacion.PublicacionService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping("/api/publicaciones")
@@ -28,9 +30,9 @@ public class PublicacionController {
 
     // POST /api/publicaciones  -> crea una publicación
     @PostMapping
-    public ResponseEntity<MostrarPublicacionDTO> crearPublicacion(@Valid @RequestBody CrearPublicacionDTO dto) {
+    public ResponseEntity<MostrarPublicacionDTO> crearPublicacion(@Valid @RequestBody CrearPublicacionDTO dto, @AuthenticationPrincipal Usuario usuario) {
         try {
-            Publicacion publicacion = publicacionService.crearPublicacion(dto);
+            Publicacion publicacion = publicacionService.crearPublicacion(dto, usuario);
             return ResponseEntity.ok(publicacionMapper.toDTO(publicacion));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -78,6 +80,17 @@ public class PublicacionController {
                     publicacionesDTO
             );
             return ResponseEntity.ok(reporte);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // GET /api/publicaciones/usuario/{usuarioId}  -> obtener publicaciones por usuario
+    @GetMapping("/usuario/{usuarioId}")
+    public ResponseEntity<List<MostrarPublicacionDTO>> obtenerPublicacionesPorUsuario(@PathVariable Long usuarioId) {
+        try {
+            List<Publicacion> publicaciones = publicacionService.obtenerPublicacionesPorUsuario(usuarioId);
+            return ResponseEntity.ok(publicacionMapper.toDTOList(publicaciones));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }

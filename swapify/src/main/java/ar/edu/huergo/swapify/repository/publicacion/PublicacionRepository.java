@@ -23,4 +23,6 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
            """)
     BigDecimal sumaPreciosEntre(@Param("inicio") LocalDateTime inicio,
                                 @Param("fin") LocalDateTime fin);
+
+    List<Publicacion> findByUsuarioId(Long usuarioId);
 }

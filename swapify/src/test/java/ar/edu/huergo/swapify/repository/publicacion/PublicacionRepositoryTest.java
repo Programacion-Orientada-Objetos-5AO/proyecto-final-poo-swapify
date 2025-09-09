@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
+import ar.edu.huergo.swapify.entity.security.Usuario;
 
 @DataJpaTest
 public class PublicacionRepositoryTest {
@@ -28,9 +29,12 @@ public class PublicacionRepositoryTest {
         LocalDateTime fecha2 = LocalDateTime.of(2023, 1, 2, 12, 0);
         LocalDateTime fecha3 = LocalDateTime.of(2023, 1, 3, 12, 0);
 
-        Publicacion pub1 = new Publicacion(1L, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1", fecha1);
-        Publicacion pub2 = new Publicacion(2L, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2", fecha2);
-        Publicacion pub3 = new Publicacion(3L, "Libro3", new BigDecimal("300.00"), "Desc3", "Obj3", fecha3);
+        Usuario usuario = new Usuario("test@example.com", "password");
+        entityManager.persistAndFlush(usuario);
+
+        Publicacion pub1 = new Publicacion(1L, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1", fecha1, usuario);
+        Publicacion pub2 = new Publicacion(2L, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2", fecha2, usuario);
+        Publicacion pub3 = new Publicacion(3L, "Libro3", new BigDecimal("300.00"), "Desc3", "Obj3", fecha3, usuario);
 
         entityManager.persistAndFlush(pub1);
         entityManager.persistAndFlush(pub2);
@@ -52,9 +56,12 @@ public class PublicacionRepositoryTest {
         LocalDateTime fecha2 = LocalDateTime.of(2023, 1, 2, 12, 0);
         LocalDateTime fecha3 = LocalDateTime.of(2023, 1, 3, 12, 0);
 
-        Publicacion pub1 = new Publicacion(1L, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1", fecha1);
-        Publicacion pub2 = new Publicacion(2L, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2", fecha2);
-        Publicacion pub3 = new Publicacion(3L, "Libro3", new BigDecimal("300.00"), "Desc3", "Obj3", fecha3);
+        Usuario usuario = new Usuario("test@example.com", "password");
+        entityManager.persistAndFlush(usuario);
+
+        Publicacion pub1 = new Publicacion(1L, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1", fecha1, usuario);
+        Publicacion pub2 = new Publicacion(2L, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2", fecha2, usuario);
+        Publicacion pub3 = new Publicacion(3L, "Libro3", new BigDecimal("300.00"), "Desc3", "Obj3", fecha3, usuario);
 
         entityManager.persistAndFlush(pub1);
         entityManager.persistAndFlush(pub2);

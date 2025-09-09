@@ -22,10 +22,11 @@ public class PublicacionService {
     private final PublicacionRepository publicacionRepository;
     private final PublicacionMapper publicacionMapper;
 
-    public Publicacion crearPublicacion(CrearPublicacionDTO dto) {
+    public Publicacion crearPublicacion(CrearPublicacionDTO dto, ar.edu.huergo.swapify.entity.security.Usuario usuario) {
         try {
             if (dto == null) throw new IllegalArgumentException("Datos de publicación inválidos");
             Publicacion p = publicacionMapper.toEntity(dto);
+            p.setUsuario(usuario);
             return publicacionRepository.save(p);
         } catch (Exception e) {
             throw new RuntimeException("Error al crear publicación: " + e.getMessage(), e);
@@ -69,6 +70,14 @@ public class PublicacionService {
             return (suma != null) ? suma : BigDecimal.ZERO;
         } catch (Exception e) {
             throw new RuntimeException("Error al sumar precios en fecha: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Publicacion> obtenerPublicacionesPorUsuario(Long usuarioId) {
+        try {
+            return publicacionRepository.findByUsuarioId(usuarioId);
+        } catch (Exception e) {
+            throw new RuntimeException("Error al obtener publicaciones por usuario: " + e.getMessage(), e);
         }
     }
 }
