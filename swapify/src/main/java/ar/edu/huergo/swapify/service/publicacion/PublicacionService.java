@@ -27,6 +27,7 @@ public class PublicacionService {
             if (dto == null) throw new IllegalArgumentException("Datos de publicación inválidos");
             Publicacion p = publicacionMapper.toEntity(dto);
             p.setUsuario(usuario);
+            usuario.getPublicaciones().add(p);  // Agregar la publicación a la lista del usuario
             return publicacionRepository.save(p);
         } catch (Exception e) {
             throw new RuntimeException("Error al crear publicación: " + e.getMessage(), e);
