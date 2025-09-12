@@ -2,7 +2,6 @@ package ar.edu.huergo.swapify.entity.publicacion;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
 import ar.edu.huergo.swapify.entity.security.Usuario;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -29,7 +28,7 @@ public class Publicacion {
 
     @PositiveOrZero(message = "El precio no puede ser negativo")
     @Column(precision = 12, scale = 2)
-    private BigDecimal precio;  // dinero → BigDecimal
+    private BigDecimal precio;
 
     @NotBlank(message = "La descripción es obligatoria")
     @Column(nullable = false, length = 2000)
@@ -42,7 +41,8 @@ public class Publicacion {
     @Column(name = "fecha_publicacion", nullable = false, updatable = false)
     private LocalDateTime fechaPublicacion;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // EAGER para evitar LazyInitializationException al mapear a DTO fuera de la sesión
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id", nullable = false)
     @NotNull(message = "El usuario es obligatorio")
     private Usuario usuario;
