@@ -23,20 +23,16 @@ public class PublicacionService {
     private final PublicacionMapper publicacionMapper;
 
     public Publicacion crearPublicacion(CrearPublicacionDTO dto, ar.edu.huergo.swapify.entity.security.Usuario usuario) {
-        try {
-            System.out.println("DTO en crearPublicacion: " + dto);
-            if (dto == null) throw new IllegalArgumentException("Datos de publicación inválidos");
-            System.out.println("Usuario en crearPublicacion: " + usuario);
-            Publicacion p = publicacionMapper.toEntity(dto);
-            System.out.println("Entidad mapeada: " + p);
-            p.setUsuario(usuario);
-            p.setFechaPublicacion(LocalDateTime.now());
-            Publicacion guardada = publicacionRepository.save(p);
-            System.out.println("Entidad guardada: " + guardada);
-            return guardada;
-        } catch (Exception e) {
-            throw new RuntimeException("Error al crear publicación: " + e.getMessage(), e);
-        }
+        System.out.println("DTO en crearPublicacion: " + dto);
+        if (dto == null) throw new IllegalArgumentException("Datos de publicación inválidos");
+        System.out.println("Usuario en crearPublicacion: " + usuario);
+        Publicacion p = publicacionMapper.toEntity(dto);
+        System.out.println("Entidad mapeada: " + p);
+        p.setUsuario(usuario);
+        p.setFechaPublicacion(LocalDateTime.now());
+        Publicacion guardada = publicacionRepository.save(p);
+        System.out.println("Entidad guardada: " + guardada);
+        return guardada;
     }
 
     // NUEVO
@@ -50,12 +46,8 @@ public class PublicacionService {
 
     // NUEVO
     public Publicacion obtenerPorId(Long id) {
-        try {
-            return publicacionRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Publicación no encontrada"));
-        } catch (Exception e) {
-            throw new RuntimeException("Error al obtener publicación por ID: " + e.getMessage(), e);
-        }
+        return publicacionRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Publicación no encontrada"));
     }
 
     public List<Publicacion> obtenerPublicacionesDeFecha(LocalDate fecha) {

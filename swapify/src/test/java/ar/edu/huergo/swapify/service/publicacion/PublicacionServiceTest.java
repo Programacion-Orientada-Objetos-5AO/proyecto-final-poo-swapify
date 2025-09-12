@@ -1,10 +1,5 @@
 package ar.edu.huergo.swapify.service.publicacion;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,10 +8,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import ar.edu.huergo.swapify.dto.publicacion.CrearPublicacionDTO;
@@ -48,7 +47,7 @@ public class PublicacionServiceTest {
         dto.setObjetoACambiar("Otro libro");
 
         Usuario usuario = new Usuario("test@example.com", "password");
-        Publicacion publicacion = new Publicacion(1L, "Libro", new BigDecimal("100.00"), "Libro de programación", "Otro libro", LocalDateTime.now(), usuario);
+        Publicacion publicacion = new Publicacion(null, "Libro", new BigDecimal("100.00"), "Libro de programación", "Otro libro", LocalDateTime.now(), usuario);
 
         when(publicacionMapper.toEntity(dto)).thenReturn(publicacion);
         when(publicacionRepository.save(publicacion)).thenReturn(publicacion);
@@ -74,8 +73,8 @@ public class PublicacionServiceTest {
     public void testListarTodas() {
         // Given
         Usuario usuario = new Usuario("test@example.com", "password");
-        Publicacion pub1 = new Publicacion(1L, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1", LocalDateTime.now(), usuario);
-        Publicacion pub2 = new Publicacion(2L, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2", LocalDateTime.now(), usuario);
+        Publicacion pub1 = new Publicacion(null, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1", LocalDateTime.now(), usuario);
+        Publicacion pub2 = new Publicacion(null, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2", LocalDateTime.now(), usuario);
         List<Publicacion> publicaciones = Arrays.asList(pub1, pub2);
 
         when(publicacionRepository.findAll()).thenReturn(publicaciones);
@@ -91,7 +90,7 @@ public class PublicacionServiceTest {
     public void testObtenerPorId_Success() {
         // Given
         Usuario usuario = new Usuario("test@example.com", "password");
-        Publicacion publicacion = new Publicacion(1L, "Libro", new BigDecimal("100.00"), "Desc", "Obj", LocalDateTime.now(), usuario);
+        Publicacion publicacion = new Publicacion(null, "Libro", new BigDecimal("100.00"), "Desc", "Obj", LocalDateTime.now(), usuario);
         when(publicacionRepository.findById(1L)).thenReturn(Optional.of(publicacion));
 
         // When
