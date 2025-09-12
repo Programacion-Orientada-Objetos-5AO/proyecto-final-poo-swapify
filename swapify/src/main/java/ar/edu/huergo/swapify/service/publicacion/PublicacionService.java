@@ -21,14 +21,18 @@ public class PublicacionService {
 
     private final PublicacionRepository publicacionRepository;
     private final PublicacionMapper publicacionMapper;
+    private final ar.edu.huergo.swapify.repository.security.UsuarioRepository usuarioRepository;
 
     public Publicacion crearPublicacion(CrearPublicacionDTO dto, ar.edu.huergo.swapify.entity.security.Usuario usuario) {
         System.out.println("DTO en crearPublicacion: " + dto);
         if (dto == null) throw new IllegalArgumentException("Datos de publicación inválidos");
         System.out.println("Usuario en crearPublicacion: " + usuario);
+        // Fetch the managed usuario entity
+        ar.edu.huergo.swapify.entity.security.Usuario managedUsuario = usuarioRepository.findByUsername(usuario.getUsername())
+            .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
         Publicacion p = publicacionMapper.toEntity(dto);
         System.out.println("Entidad mapeada: " + p);
-        p.setUsuario(usuario);
+        p.setUsuario(managedUsuario);
         p.setFechaPublicacion(LocalDateTime.now());
         Publicacion guardada = publicacionRepository.save(p);
         System.out.println("Entidad guardada: " + guardada);

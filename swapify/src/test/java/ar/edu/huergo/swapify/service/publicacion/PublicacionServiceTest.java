@@ -34,6 +34,9 @@ public class PublicacionServiceTest {
     @Mock
     private PublicacionMapper publicacionMapper;
 
+    @Mock
+    private ar.edu.huergo.swapify.repository.security.UsuarioRepository usuarioRepository;
+
     @InjectMocks
     private PublicacionService publicacionService;
 
@@ -49,6 +52,7 @@ public class PublicacionServiceTest {
         Usuario usuario = new Usuario("test@example.com", "password");
         Publicacion publicacion = new Publicacion(null, "Libro", new BigDecimal("100.00"), "Libro de programación", "Otro libro", LocalDateTime.now(), usuario);
 
+        when(usuarioRepository.findByUsername(usuario.getUsername())).thenReturn(java.util.Optional.of(usuario));
         when(publicacionMapper.toEntity(dto)).thenReturn(publicacion);
         when(publicacionRepository.save(publicacion)).thenReturn(publicacion);
 
