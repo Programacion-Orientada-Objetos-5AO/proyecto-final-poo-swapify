@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Detalle</title></head>
+<body>
+<div th:replace="~{base :: layout(${titulo} ?: 'Detalle', ~{::section})}">
+  <section>
+    <a class="btn btn-link p-0 mb-3" th:href="@{/web/publicaciones}">← Volver</a>
+    <h1 class="mb-3" th:text="${titulo} ?: 'Detalle de la publicación'">Detalle</h1>
+
+    <div class="card">
+      <div class="card-body">
+        <h4 class="card-title" th:text="${publicacion.nombre}">Nombre</h4>
+        <p class="card-text" th:text="${publicacion.descripcion}">Descripción</p>
+        <p class="mb-1"><strong>Objeto a cambiar:</strong> <span th:text="${publicacion.objetoACambiar}">objeto</span></p>
+        <p class="mb-1"><strong>Precio ref.:</strong> <span th:text="${publicacion.precio}">0</span></p>
+        <p class="mb-1"><strong>Fecha:</strong> <span th:text="${#temporals.format(publicacion.fechaPublicacion,'dd/MM/yyyy HH:mm')}">fecha</span></p>
+        <p class="mb-0"><strong>Usuario:</strong>
+          <span th:text="${publicacion.usuario != null ? publicacion.usuario.username : publicacion.usuarioUsername}">user</span>
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

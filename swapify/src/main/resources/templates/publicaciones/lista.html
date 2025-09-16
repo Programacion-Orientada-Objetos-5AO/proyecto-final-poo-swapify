@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Publicaciones</title></head>
+<body>
+<!-- Reemplazamos TODO el body por el layout completo y le pasamos el <section> -->
+<div th:replace="~{base :: layout(${titulo} ?: 'Publicaciones', ~{::section})}">
+  <section>
+    <h1 class="mb-3" th:text="${titulo} ?: 'Publicaciones'">Publicaciones</h1>
+
+    <div class="d-flex justify-content-end mb-3">
+      <a class="btn btn-primary" th:href="@{/web/publicaciones/nueva}">Nueva publicación</a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(publicaciones)}" class="alert alert-info">
+      No hay publicaciones.
+    </div>
+
+    <div class="row" th:if="${!#lists.isEmpty(publicaciones)}">
+      <div class="col-md-6 col-lg-4 mb-3" th:each="p : ${publicaciones}">
+        <div class="card pub-card h-100">
+          <div class="card-body">
+            <h5 class="card-title" th:text="${p.nombre}">Nombre</h5>
+            <p class="card-text small text-muted" th:text="${p.descripcion}">Descripción</p>
+            <p class="mb-1"><strong>Objeto a cambiar:</strong> <span th:text="${p.objetoACambiar}">objeto</span></p>
+            <p class="mb-1 pub-price"><span th:text="${p.precio}">0</span></p>
+            <p class="mb-3 pub-meta">
+              <strong>Fecha:</strong> <span th:text="${#temporals.format(p.fechaPublicacion,'dd/MM/yyyy HH:mm')}">--/--/----</span>
+            </p>
+            <p class="mb-3"><strong>Usuario:</strong>
+              <span th:text="${p.usuario != null ? p.usuario.username : p.usuarioUsername}">user</span>
+            </p>
+            <a class="btn btn-outline-primary btn-sm" th:href="@{/web/publicaciones/{id}(id=${p.id})}">Ver detalle</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

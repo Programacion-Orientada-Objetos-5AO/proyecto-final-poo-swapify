@@ -1,0 +1,500 @@
+/* Estilos personalizados para Restaurante Huergo */
+
+/* Variables CSS para consistencia de colores */
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --info-color: #0dcaf0;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-color: #f8f9fa;
+    --dark-color: #212529;
+    --shadow-light: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-medium: 0 4px 8px rgba(0,0,0,0.15);
+    --shadow-strong: 0 6px 12px rgba(0,0,0,0.2);
+    --border-radius: 0.5rem;
+    --transition: all 0.3s ease;
+}
+
+/* Estilos globales */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    background-color: #f8f9fa;
+}
+
+/* Mejoras en la navegación */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+    transition: var(--transition);
+}
+
+.navbar-brand:hover {
+    transform: scale(1.05);
+}
+
+.nav-link {
+    font-weight: 500;
+    transition: var(--transition);
+    border-radius: var(--border-radius);
+    margin: 0 0.25rem;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.nav-link.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    font-weight: bold;
+}
+
+/* Estilos para cards */
+.card {
+    border: none;
+    box-shadow: var(--shadow-light);
+    transition: var(--transition);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    border-bottom: none;
+    font-weight: bold;
+    padding: 1rem 1.25rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+/* Estilos para botones */
+.btn {
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    transition: var(--transition);
+    border: 2px solid transparent;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0b5ed7, #0a58ca);
+    border-color: #0a58ca;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #198754, #146c43);
+    border-color: #198754;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #146c43, #13653f);
+    border-color: #146c43;
+}
+
+.btn-outline-primary {
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+/* Estilos para alertas */
+.alert {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: var(--success-color);
+    background-color: #d1e7dd;
+}
+
+.alert-danger {
+    border-left-color: var(--danger-color);
+    background-color: #f8d7da;
+}
+
+.alert-info {
+    border-left-color: var(--info-color);
+    background-color: #cff4fc;
+}
+
+.alert-warning {
+    border-left-color: var(--warning-color);
+    background-color: #fff3cd;
+}
+
+/* Estilos para formularios */
+.form-control {
+    border: 2px solid #e9ecef;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    transform: translateY(-1px);
+}
+
+.form-control.is-invalid {
+    border-color: var(--danger-color);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 0.5rem;
+}
+
+.invalid-feedback {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Estilos para badges */
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 1rem;
+    padding: 0.35em 0.65em;
+}
+
+/* Estilos específicos para platos */
+.plato-card .card-header {
+    background: linear-gradient(135deg, var(--primary-color), #0b5ed7);
+}
+
+.plato-price {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--success-color);
+}
+
+/* Estilos para ingredientes */
+.ingredient-card {
+    transition: var(--transition);
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 2px solid #dee2e6;
+    border-radius: var(--border-radius);
+}
+
+.ingredient-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-medium);
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, #e9ecef, #dee2e6);
+}
+
+.ingredient-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--success-color), #146c43);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+    transition: var(--transition);
+}
+
+.ingredient-card:hover .ingredient-icon {
+    transform: rotate(10deg) scale(1.1);
+}
+
+/* Estilos para el breadcrumb */
+.breadcrumb {
+    background: linear-gradient(135deg, #e9ecef, #f8f9fa);
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1rem;
+    box-shadow: var(--shadow-light);
+}
+
+.breadcrumb-item a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.breadcrumb-item a:hover {
+    color: #0b5ed7;
+    text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+    color: var(--dark-color);
+    font-weight: 600;
+}
+
+/* Estilos para el footer */
+footer {
+    margin-top: auto;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+    border-top: 3px solid var(--primary-color);
+}
+
+/* Estilos para iconos */
+.fa, .fas, .fab {
+    transition: var(--transition);
+}
+
+.text-primary .fa,
+.text-primary .fas {
+    color: var(--primary-color) !important;
+}
+
+.text-success .fa,
+.text-success .fas {
+    color: var(--success-color) !important;
+}
+
+.text-info .fa,
+.text-info .fas {
+    color: var(--info-color) !important;
+}
+
+.text-warning .fa,
+.text-warning .fas {
+    color: var(--warning-color) !important;
+}
+
+.text-danger .fa,
+.text-danger .fas {
+    color: var(--danger-color) !important;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.slide-in-left {
+    animation: slideInFromLeft 0.6s ease-out;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+.bounce-on-hover:hover {
+    animation: bounce 0.6s;
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .display-3 {
+        font-size: 2.5rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .btn {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .navbar-brand {
+        font-size: 1.25rem;
+    }
+    
+    .display-4 {
+        font-size: 1.75rem;
+    }
+    
+    .lead {
+        font-size: 1rem;
+    }
+    
+    .card-header h5,
+    .card-header h4 {
+        font-size: 1rem;
+    }
+}
+
+/* Estilos para estados de carga */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Estilos para tooltips personalizados */
+.custom-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.custom-tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--dark-color);
+    color: white;
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: var(--shadow-medium);
+}
+
+/* Efectos de hover para links */
+a {
+    transition: var(--transition);
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+/* Estilos para el hero section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color), #0b5ed7);
+    color: white;
+    padding: 4rem 0;
+    margin-bottom: 2rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.hero-section h1 {
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Estilos para las estadísticas */
+.stat-card {
+    text-align: center;
+    padding: 2rem 1rem;
+    border-radius: var(--border-radius);
+    background: white;
+    box-shadow: var(--shadow-light);
+    transition: var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
+}
+
+.stat-number {
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    display: block;
+}
+
+.stat-label {
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+    font-weight: 500;
+}
+
+/* Estilos para información adicional */
+.info-item {
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+}
+
+.info-item strong {
+    display: inline-block;
+    min-width: 120px;
+    margin-right: 1rem;
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    footer,
+    .btn,
+    .breadcrumb {
+        display: none !important;
+    }
+    
+    .container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #dee2e6 !important;
+    }
+}
