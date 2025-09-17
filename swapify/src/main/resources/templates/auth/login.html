@@ -8,7 +8,10 @@
       <div id="msg" class="alert" style="display:none"></div>
 
       <h1 class="mb-3">Iniciar sesión</h1>
-      <form id="loginForm" class="vstack gap-3">
+      <div th:if="${param.error}" class="alert alert-danger">Credenciales inválidas. Inténtalo de nuevo.</div>
+      <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+      <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+      <form th:action="@{/login}" method="post" class="vstack gap-3">
         <div>
           <label class="form-label">Email (username)</label>
           <input name="username" type="email" class="form-control" required>
@@ -22,10 +25,9 @@
       </form>
 
       <hr class="my-4">
-      <button id="logoutBtn" class="btn btn-outline-secondary btn-sm">Cerrar sesión (borrar token)</button>
     </div>
   </section>
 </div>
-<script src="/js/app.js"></script>
+<script src="/css/js/app.js"></script>
 </body>
 </html>

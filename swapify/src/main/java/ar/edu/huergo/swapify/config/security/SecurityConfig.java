@@ -30,27 +30,43 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
-        // API stateless con JWT; vistas /web y estáticos públicos.
+        // API stateless con JWT; vistas /web con sesiones para form login.
         http
             .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
                 // 1) Vistas Thymeleaf y recursos estáticos (públicos)
-                .requestMatchers("/", "/web/**",
+                .requestMatchers("/", "/web/publicaciones", "/web/publicaciones/{id}", "/web/acerca",
                                  "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
 
                 // 2) Endpoints públicos del API
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/usuarios/registrar").permitAll()
 
-                // 3) Reglas del API protegidas por rol / autenticación
+                // 3) Login processing
+                .requestMatchers("/login").permitAll()
+
+                // 4) Reglas del API protegidas por rol / autenticación
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/publicaciones").hasRole("CLIENTE")
                 .requestMatchers(HttpMethod.GET, "/api/publicaciones/reporte").hasRole("ADMIN")
                 .requestMatchers("/api/**").authenticated()
 
-                // 4) Cualquier otra ruta
+                // 5) Web forms requieren autenticación
+                .requestMatchers("/web/publicaciones/nueva").authenticated()
+                .requestMatchers(HttpMethod.POST, "/web/publicaciones").authenticated()
+
+                // 6) Cualquier otra ruta
                 .anyRequest().permitAll()
+            )
+            .formLogin(form -> form
+                .loginPage("/web/login")
+                .defaultSuccessUrl("/web/publicaciones", true)
+                .failureUrl("/web/login?error")
+            )
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/web/")
             )
             .exceptionHandling(ex -> ex
                 .accessDeniedHandler(accessDeniedHandler())

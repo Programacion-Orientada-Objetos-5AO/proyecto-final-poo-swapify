@@ -7,7 +7,7 @@
   <section>
     <h1 class="mb-3" th:text="${titulo} ?: 'Publicaciones'">Publicaciones</h1>
 
-    <div class="d-flex justify-content-end mb-3">
+    <div class="d-flex justify-content-end mb-3" sec:authorize="isAuthenticated()">
       <a class="btn btn-primary" th:href="@{/web/publicaciones/nueva}">Nueva publicación</a>
     </div>
 

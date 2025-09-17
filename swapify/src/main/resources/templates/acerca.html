@@ -5,10 +5,10 @@
   <title>Acerca</title>
 </head>
 <body>
-  <div th:replace="~{base :: content(~{::section})}">
+  <div th:replace="~{base :: layout('Acerca', ~{::section})}">
     <section>
       <h1>Acerca de Proyecto carrera</h1>
-      <p>App de intercambio (“Swapify”) con publicaciones y usuarios.</p>
+      <p>App de intercambio ("Swapify") con publicaciones y usuarios.</p>
     </section>
   </div>
 </body>

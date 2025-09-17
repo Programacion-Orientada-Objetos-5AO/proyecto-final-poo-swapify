@@ -1,0 +1,4 @@
+- [x] Update base.html: Change "Invitado" to "Iniciar sesión" link, add logout, hide "Crear" if not authenticated
+- [x] Fix registro.html: Change th:replace to use "layout" fragment
+- [x] Update publicaciones/lista.html: Hide "Nueva publicación" button if not authenticated
+- [ ] Run application with gradlew bootRun and test functionality

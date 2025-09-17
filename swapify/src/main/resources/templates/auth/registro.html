@@ -5,11 +5,12 @@
   <title>Registro</title>
 </head>
 <body>
-  <div th:replace="~{base :: content(~{::section})}">
+  <div th:replace="~{base :: layout(${titulo} ?: 'Crear cuenta', ~{::section})}">
     <section class="row justify-content-center">
       <div class="col-md-6">
         <h1 class="mb-3">Crear cuenta</h1>
         <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
 
         <!-- Si usás binding server-side, proveé th:object con el modelo -->
         <form th:action="@{/web/registro}" method="post" class="vstack gap-3">
@@ -20,6 +21,10 @@
           <div>
             <label class="form-label">Contraseña</label>
             <input name="password" type="password" class="form-control" required>
+          </div>
+          <div>
+            <label class="form-label">Verificar Contraseña</label>
+            <input name="verificacionPassword" type="password" class="form-control" required>
           </div>
           <button class="btn btn-success">Registrarme</button>
         </form>

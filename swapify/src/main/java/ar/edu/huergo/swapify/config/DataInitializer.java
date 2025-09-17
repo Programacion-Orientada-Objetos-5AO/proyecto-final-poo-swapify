@@ -31,7 +31,7 @@ public class DataInitializer {
             }
 
             if (usuarioRepository.findByUsername("cliente@huergo.edu.ar").isEmpty()) {
-                String clientePassword = "ClienteSuperSegura@123";
+                String clientePassword = "ClienteSeguro@123";
                 PasswordValidator.validate(clientePassword);
                 Usuario u = new Usuario("cliente@huergo.edu.ar", encoder.encode(clientePassword));
                 u.setRoles(Set.of(cliente));
