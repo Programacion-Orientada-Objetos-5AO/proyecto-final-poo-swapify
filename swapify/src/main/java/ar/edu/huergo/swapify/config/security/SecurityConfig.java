@@ -33,6 +33,8 @@ public class SecurityConfig {
         // API stateless con JWT; vistas /web con sesiones para form login.
         http
             .csrf(csrf -> csrf.disable())
+            .formLogin(form -> form.disable())
+            .logout(logout -> logout.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
                 // 1) Vistas Thymeleaf y recursos estáticos (públicos)
@@ -45,6 +47,7 @@ public class SecurityConfig {
 
                 // 3) Login processing
                 .requestMatchers("/login").permitAll()
+                .requestMatchers("/web/login").permitAll()
 
                 // 4) Reglas del API protegidas por rol / autenticación
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").hasRole("ADMIN")
@@ -59,15 +62,7 @@ public class SecurityConfig {
                 // 6) Cualquier otra ruta
                 .anyRequest().permitAll()
             )
-            .formLogin(form -> form
-                .loginPage("/web/login")
-                .defaultSuccessUrl("/web/publicaciones", true)
-                .failureUrl("/web/login?error")
-            )
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/web/")
-            )
+
             .exceptionHandling(ex -> ex
                 .accessDeniedHandler(accessDeniedHandler())
                 .authenticationEntryPoint(authenticationEntryPoint())

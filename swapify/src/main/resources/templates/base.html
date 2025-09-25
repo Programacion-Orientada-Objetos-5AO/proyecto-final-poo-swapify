@@ -36,7 +36,7 @@
           <li class="nav-item" sec:authorize="isAuthenticated()">
             <span class="navbar-text text-white">
               <i class="bi bi-person"></i> <span sec:authentication="name"></span>
-              <a class="nav-link d-inline" th:href="@{/logout}">Cerrar sesión</a>
+              <a id="logoutBtn" class="nav-link d-inline">Cerrar sesión</a>
             </span>
           </li>
         </ul>
