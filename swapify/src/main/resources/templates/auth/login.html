@@ -11,7 +11,7 @@
       <div th:if="${param.error}" class="alert alert-danger">Credenciales inválidas. Inténtalo de nuevo.</div>
       <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
       <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-      <form id="loginForm" class="vstack gap-3">
+      <form id="loginForm" class="vstack gap-3" th:action="@{/web/login}" method="post">
         <div>
           <label class="form-label">Email (username)</label>
           <input name="username" type="email" class="form-control" required>
@@ -25,9 +25,9 @@
       </form>
 
       <hr class="my-4">
+      <p class="text-muted">¿Todavía no tenés cuenta? <a th:href="@{/web/registro}">Registrate</a> en un minuto.</p>
     </div>
   </section>
 </div>
-<script src="/css/js/app.js"></script>
 </body>
 </html>

@@ -3,9 +3,15 @@ package ar.edu.huergo.swapify.controller.web;
 import java.util.List;
 import java.util.Map;
 
+import java.time.Duration;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Controller;
@@ -22,6 +28,10 @@ import ar.edu.huergo.swapify.entity.security.Usuario;
 import ar.edu.huergo.swapify.service.security.JwtTokenService;
 import ar.edu.huergo.swapify.service.security.UsuarioService;
 import lombok.RequiredArgsConstructor;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Controlador web (Thymeleaf) para vistas de autenticación
@@ -81,7 +91,32 @@ public class AuthWebController {
     }
 
     /** Procesar login desde AJAX y devolver token */
-    @PostMapping("/login")
+    @PostMapping(value = "/login", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.TEXT_HTML_VALUE)
+    public String loginDesdeFormulario(@RequestParam String username,
+                                       @RequestParam String password,
+                                       RedirectAttributes ra,
+                                       HttpServletResponse response) {
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            List<String> roles = userDetails.getAuthorities().stream().map(a -> a.getAuthority()).toList();
+
+            String token = jwtTokenService.generarToken(userDetails, roles);
+            Cookie cookie = new Cookie("jwtToken", token);
+            cookie.setMaxAge(86400); // 1 día
+            cookie.setPath("/");
+            cookie.setHttpOnly(true);
+            response.addCookie(cookie);
+
+            ra.addFlashAttribute("success", "Sesión iniciada correctamente");
+            return "redirect:/web/publicaciones";
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", "Credenciales inválidas");
+            return "redirect:/web/login";
+        }
+    }
+
+    @PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Map<String, String>> loginAjax(@RequestParam String username, @RequestParam String password) {
         try {
@@ -96,10 +131,38 @@ public class AuthWebController {
             // 3) Generar token JWT
             String token = jwtTokenService.generarToken(userDetails, roles);
 
+            ResponseCookie cookie = ResponseCookie.from("jwtToken", token)
+                .path("/")
+                .maxAge(Duration.ofDays(1))
+                .httpOnly(true)
+                .build();
+
             // 4) Responder con el token
-            return ResponseEntity.ok(Map.of("token", token));
+            return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(Map.of("token", token));
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", "Credenciales inválidas"));
         }
+    }
+
+    @PostMapping("/logout")
+    public String logout(HttpServletRequest request,
+                         HttpServletResponse response,
+                         RedirectAttributes ra) {
+        Cookie cookie = new Cookie("jwtToken", "");
+        cookie.setMaxAge(0);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        response.addCookie(cookie);
+
+        var session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        SecurityContextHolder.clearContext();
+
+        ra.addFlashAttribute("success", "Sesión cerrada correctamente");
+        return "redirect:/web/publicaciones";
     }
 }

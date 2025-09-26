@@ -14,46 +14,50 @@ document.addEventListener("DOMContentLoaded", () => {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
           },
+          credentials: "same-origin",
           body: new URLSearchParams({ username, password }),
         });
-
-        const data = await response.json();
+        let data = {};
+        const isJson = response.headers.get("content-type")?.includes("application/json");
+        if (isJson) {
+          data = await response.json();
+        }
 
         if (response.ok && data.token) {
-          // Guardar token en localStorage y cookie
+          // Guardar token en localStorage (el backend setea la cookie)
           localStorage.setItem("jwtToken", data.token);
-          document.cookie = `jwtToken=${data.token}; path=/; max-age=86400`; // 1 día
 
           // Redirigir a la página principal
           window.location.href = "/web/publicaciones";
         } else {
           // Mostrar error
           const msgDiv = document.getElementById("msg");
-          msgDiv.className = "alert alert-danger";
-          msgDiv.textContent = data.error || "Error al iniciar sesión";
-          msgDiv.style.display = "block";
+          if (msgDiv) {
+            msgDiv.className = "alert alert-danger";
+            msgDiv.textContent = data.error || "Error al iniciar sesión";
+            msgDiv.style.display = "block";
+          }
         }
       } catch (error) {
         console.error("Error:", error);
         const msgDiv = document.getElementById("msg");
-        msgDiv.className = "alert alert-danger";
-        msgDiv.textContent = "Error de conexión";
-        msgDiv.style.display = "block";
+        if (msgDiv) {
+          msgDiv.className = "alert alert-danger";
+          msgDiv.textContent = "Error de conexión";
+          msgDiv.style.display = "block";
+        }
       }
     });
   }
 
   // LOGOUT
-  const btnOut = document.getElementById("logoutBtn");
-  if (btnOut) {
-    btnOut.addEventListener("click", (e) => {
-      e.preventDefault();
-      // Limpiar token
+  const logoutForm = document.getElementById("logoutForm");
+  if (logoutForm) {
+    logoutForm.addEventListener("submit", () => {
+      // Limpiar token almacenado localmente antes de enviar el formulario
       localStorage.removeItem("jwtToken");
-      document.cookie = "jwtToken=; path=/; max-age=0";
-      // Redirigir a logout (que puede ser /logout o directamente a /web/)
-      window.location.href = "/web/";
     });
   }
 });

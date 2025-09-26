@@ -48,6 +48,8 @@ public class SecurityConfig {
                 // 3) Login processing
                 .requestMatchers("/login").permitAll()
                 .requestMatchers("/web/login").permitAll()
+                .requestMatchers("/web/registro").permitAll()
+                .requestMatchers(HttpMethod.POST, "/web/registro").permitAll()
 
                 // 4) Reglas del API protegidas por rol / autenticación
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").hasRole("ADMIN")
