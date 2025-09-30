@@ -50,7 +50,8 @@ public class PublicacionServiceTest {
         dto.setObjetoACambiar("Otro libro");
 
         Usuario usuario = new Usuario("test@example.com", "password");
-        Publicacion publicacion = new Publicacion(null, "Libro", new BigDecimal("100.00"), "Libro de programación", "Otro libro", LocalDateTime.now(), usuario);
+        Publicacion publicacion = new Publicacion(null, "Libro", new BigDecimal("100.00"),
+                "Libro de programación", "Otro libro", LocalDateTime.now(), usuario, null, null);
 
         when(usuarioRepository.findByUsername(usuario.getUsername())).thenReturn(java.util.Optional.of(usuario));
         when(publicacionMapper.toEntity(dto)).thenReturn(publicacion);
@@ -77,11 +78,13 @@ public class PublicacionServiceTest {
     public void testListarTodas() {
         // Given
         Usuario usuario = new Usuario("test@example.com", "password");
-        Publicacion pub1 = new Publicacion(null, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1", LocalDateTime.now(), usuario);
-        Publicacion pub2 = new Publicacion(null, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2", LocalDateTime.now(), usuario);
+        Publicacion pub1 = new Publicacion(null, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1",
+                LocalDateTime.now(), usuario, null, null);
+        Publicacion pub2 = new Publicacion(null, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2",
+                LocalDateTime.now(), usuario, null, null);
         List<Publicacion> publicaciones = Arrays.asList(pub1, pub2);
 
-        when(publicacionRepository.findAll()).thenReturn(publicaciones);
+        when(publicacionRepository.findAllByOrderByFechaPublicacionDesc()).thenReturn(publicaciones);
 
         // When
         List<Publicacion> result = publicacionService.listarTodas();
@@ -94,7 +97,8 @@ public class PublicacionServiceTest {
     public void testObtenerPorId_Success() {
         // Given
         Usuario usuario = new Usuario("test@example.com", "password");
-        Publicacion publicacion = new Publicacion(null, "Libro", new BigDecimal("100.00"), "Desc", "Obj", LocalDateTime.now(), usuario);
+        Publicacion publicacion = new Publicacion(null, "Libro", new BigDecimal("100.00"), "Desc", "Obj",
+                LocalDateTime.now(), usuario, null, null);
         when(publicacionRepository.findById(1L)).thenReturn(Optional.of(publicacion));
 
         // When
@@ -121,7 +125,8 @@ public class PublicacionServiceTest {
         LocalDateTime fin = fecha.atTime(LocalTime.MAX);
 
         Usuario usuario = new Usuario("test@example.com", "password");
-        Publicacion pub1 = new Publicacion(1L, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1", inicio.plusHours(1), usuario);
+        Publicacion pub1 = new Publicacion(1L, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1",
+                inicio.plusHours(1), usuario, null, null);
         List<Publicacion> publicaciones = Arrays.asList(pub1);
 
         when(publicacionRepository.findByFechaPublicacionBetween(inicio, fin)).thenReturn(publicaciones);

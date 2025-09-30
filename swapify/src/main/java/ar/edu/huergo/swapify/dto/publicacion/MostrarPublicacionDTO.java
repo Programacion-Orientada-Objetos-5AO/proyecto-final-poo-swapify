@@ -16,4 +16,6 @@ public class MostrarPublicacionDTO {
     private String objetoACambiar;
     private LocalDateTime fechaPublicacion;
     private String usuarioUsername;
+    private String imagenBase64;
+    private String imagenContentType;
 }

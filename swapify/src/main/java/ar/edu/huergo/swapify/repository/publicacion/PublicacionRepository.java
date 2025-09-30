@@ -25,4 +25,8 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
                                 @Param("fin") LocalDateTime fin);
 
     List<Publicacion> findByUsuarioId(Long usuarioId);
+
+    List<Publicacion> findByUsuarioUsernameOrderByFechaPublicacionDesc(String username);
+
+    List<Publicacion> findAllByOrderByFechaPublicacionDesc();
 }

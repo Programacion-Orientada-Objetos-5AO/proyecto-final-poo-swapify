@@ -2,6 +2,8 @@ package ar.edu.huergo.swapify.entity.publicacion;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+
 import ar.edu.huergo.swapify.entity.security.Usuario;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -10,12 +12,14 @@ import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "Publicacion")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"usuario", "imagen"})
 public class Publicacion {
 
     @Id
@@ -47,10 +51,34 @@ public class Publicacion {
     @NotNull(message = "El usuario es obligatorio")
     private Usuario usuario;
 
+    @Lob
+    @Column(name = "imagen", columnDefinition = "LONGBLOB")
+    private byte[] imagen;
+
+    @Column(name = "imagen_content_type", length = 100)
+    private String imagenContentType;
+
     @PrePersist
     public void prePersist() {
         if (this.fechaPublicacion == null) {
             this.fechaPublicacion = LocalDateTime.now();
         }
+    }
+
+    public boolean tieneImagen() {
+        return imagen != null && imagen.length > 0;
+    }
+
+    public void limpiarImagen() {
+        this.imagen = null;
+        this.imagenContentType = null;
+    }
+
+    public byte[] getImagen() {
+        return imagen != null ? Arrays.copyOf(imagen, imagen.length) : null;
+    }
+
+    public void setImagen(byte[] imagen) {
+        this.imagen = (imagen != null) ? Arrays.copyOf(imagen, imagen.length) : null;
     }
 }

@@ -1,6 +1,7 @@
 package ar.edu.huergo.swapify.mapper.publicacion;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,7 +25,9 @@ public class PublicacionMapper {
                 publicacion.getDescripcion(),
                 publicacion.getObjetoACambiar(),
                 publicacion.getFechaPublicacion(),
-                publicacion.getUsuario() != null ? publicacion.getUsuario().getUsername() : null
+                publicacion.getUsuario() != null ? publicacion.getUsuario().getUsername() : null,
+                publicacion.tieneImagen() ? Base64.getEncoder().encodeToString(publicacion.getImagen()) : null,
+                publicacion.getImagenContentType()
         );
     }
 

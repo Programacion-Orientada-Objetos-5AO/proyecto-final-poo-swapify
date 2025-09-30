@@ -3,29 +3,87 @@
 <head><meta charset="UTF-8"><title>Iniciar sesión</title></head>
 <body>
 <div th:replace="~{base :: layout(${titulo} ?: 'Iniciar sesión', ~{::section})}">
-  <section class="row justify-content-center">
-    <div class="col-md-5">
-      <div id="msg" class="alert" style="display:none"></div>
-
-      <h1 class="mb-3">Iniciar sesión</h1>
-      <div th:if="${param.error}" class="alert alert-danger">Credenciales inválidas. Inténtalo de nuevo.</div>
-      <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-      <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-      <form id="loginForm" class="vstack gap-3" th:action="@{/web/login}" method="post">
-        <div>
-          <label class="form-label">Email (username)</label>
-          <input name="username" type="email" class="form-control" required>
+  <section class="auth-section">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6 order-lg-2">
+        <div class="card auth-card">
+          <div class="card-header py-4">
+            <div class="d-flex align-items-center gap-3">
+              <span class="brand-icon small flex-shrink-0"><i class="bi bi-unlock"></i></span>
+              <div>
+                <h1 class="h4 fw-semibold mb-0">Ingresá a tu cuenta</h1>
+                <small class="text-white-50">Retomá tus conversaciones y publicaciones en segundos.</small>
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-4 p-lg-5">
+            <div id="msg" class="alert" style="display:none"></div>
+            <div th:if="${param.error}" class="alert alert-danger">Credenciales inválidas. Inténtalo de nuevo.</div>
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+            <form id="loginForm" class="vstack gap-3" th:action="@{/web/login}" method="post">
+              <div>
+                <label class="form-label">Email (usuario)</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-envelope"></i></span>
+                  <input name="username" type="email" class="form-control" placeholder="tu@correo.com" required>
+                </div>
+              </div>
+              <div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <label class="form-label mb-0">Contraseña</label>
+                  <a class="small text-decoration-none" href="#">¿Olvidaste tu contraseña?</a>
+                </div>
+                <div class="input-group">
+                  <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-shield-lock"></i></span>
+                  <input name="password" type="password" class="form-control" placeholder="••••••••" required>
+                </div>
+              </div>
+              <div class="d-grid gap-3">
+                <button type="submit" class="btn btn-primary btn-icon">
+                  <i class="bi bi-box-arrow-in-right"></i>
+                  Ingresar ahora
+                </button>
+                <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones}">
+                  <i class="bi bi-arrow-left"></i> Volver a explorar
+                </a>
+              </div>
+            </form>
+            <div class="auth-divider"><span>o continuá con tu cuenta</span></div>
+            <p class="auth-footer mb-0">¿Todavía no tenés cuenta? <a class="fw-semibold" th:href="@{/web/registro}">Registrate gratis</a></p>
+          </div>
         </div>
-        <div>
-          <label class="form-label">Contraseña</label>
-          <input name="password" type="password" class="form-control" required>
+      </div>
+      <div class="col-lg-6 order-lg-1">
+        <div class="auth-copy">
+          <span class="badge-soft text-uppercase">Bienvenido a Swapify</span>
+          <h2 class="display-6 mt-3 mb-4">Conectá con personas reales y transformá tus objetos en oportunidades</h2>
+          <p class="text-body-secondary mb-4">Gestioná tus intercambios desde un panel intuitivo, con seguimiento en tiempo real y soporte dedicado de nuestra comunidad.</p>
+          <div class="auth-highlights">
+            <div class="auth-highlight">
+              <i class="bi bi-chat-dots-fill"></i>
+              <div>
+                <p class="fw-semibold mb-1">Negociaciones ágiles</p>
+                <p class="text-body-secondary mb-0">Respondé ofertas y mensajes sin salir de la plataforma.</p>
+              </div>
+            </div>
+            <div class="auth-highlight">
+              <i class="bi bi-patch-check-fill"></i>
+              <div>
+                <p class="fw-semibold mb-1">Seguridad en cada paso</p>
+                <p class="text-body-secondary mb-0">Perfiles verificados, historial transparente y alertas inteligentes.</p>
+              </div>
+            </div>
+            <div class="auth-highlight">
+              <i class="bi bi-stars"></i>
+              <div>
+                <p class="fw-semibold mb-1">Experiencia premium</p>
+                <p class="text-body-secondary mb-0">Diseño pensado para que intercambiar sea tan simple como inspirador.</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <button type="submit" class="btn btn-primary">Entrar</button>
-        <a class="btn btn-outline-secondary" th:href="@{/web/publicaciones}">Volver</a>
-      </form>
-
-      <hr class="my-4">
-      <p class="text-muted">¿Todavía no tenés cuenta? <a th:href="@{/web/registro}">Registrate</a> en un minuto.</p>
+      </div>
     </div>
   </section>
 </div>

@@ -2,16 +2,21 @@ package ar.edu.huergo.swapify.controller.web;
 
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import ar.edu.huergo.swapify.dto.publicacion.CrearOfertaDTO;
 import ar.edu.huergo.swapify.dto.publicacion.CrearPublicacionDTO;
 import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
 import ar.edu.huergo.swapify.entity.security.Usuario;
 import ar.edu.huergo.swapify.service.publicacion.PublicacionService;
+import ar.edu.huergo.swapify.service.publicacion.OfertaService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +30,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @Controller
 @RequestMapping("/web")
 @RequiredArgsConstructor
+@Slf4j
 public class PublicacionWebController {
 
     private final PublicacionService publicacionService;
+    private final OfertaService ofertaService;
 
     /** Home → lista de publicaciones */
     @GetMapping({"", "/"})
@@ -35,6 +42,8 @@ public class PublicacionWebController {
         List<Publicacion> publicaciones = publicacionService.listarTodas();
         model.addAttribute("publicaciones", publicaciones);
         model.addAttribute("titulo", "Publicaciones");
+        model.addAttribute("misPublicaciones", false);
+        model.addAttribute("requiereLogin", false);
         return "publicaciones/lista";
     }
 
@@ -44,6 +53,36 @@ public class PublicacionWebController {
         List<Publicacion> publicaciones = publicacionService.listarTodas();
         model.addAttribute("publicaciones", publicaciones);
         model.addAttribute("titulo", "Publicaciones");
+        model.addAttribute("misPublicaciones", false);
+        model.addAttribute("requiereLogin", false);
+        return "publicaciones/lista";
+    }
+
+    @GetMapping("/publicaciones/mias")
+    public String listarPropias(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
+            model.addAttribute("publicaciones", List.of());
+            model.addAttribute("titulo", "Mis publicaciones");
+            model.addAttribute("misPublicaciones", true);
+            model.addAttribute("requiereLogin", true);
+            return "publicaciones/lista";
+        }
+
+        try {
+            List<Publicacion> publicaciones = publicacionService.listarPorUsuario(auth.getName());
+            model.addAttribute("publicaciones", publicaciones);
+            model.addAttribute("titulo", "Mis publicaciones");
+            model.addAttribute("misPublicaciones", true);
+            model.addAttribute("requiereLogin", false);
+        } catch (Exception e) {
+            log.error("Error al listar las publicaciones del usuario {}", auth.getName(), e);
+            model.addAttribute("publicaciones", List.of());
+            model.addAttribute("titulo", "Mis publicaciones");
+            model.addAttribute("misPublicaciones", true);
+            model.addAttribute("requiereLogin", false);
+            model.addAttribute("error", "No pudimos cargar tus publicaciones en este momento. Intentá nuevamente más tarde.");
+        }
         return "publicaciones/lista";
     }
 
@@ -53,6 +92,10 @@ public class PublicacionWebController {
         try {
             Publicacion p = publicacionService.obtenerPorId(id);
             model.addAttribute("publicacion", p);
+            model.addAttribute("ofertas", ofertaService.listarPorPublicacion(id));
+            if (!model.containsAttribute("nuevaOferta")) {
+                model.addAttribute("nuevaOferta", new CrearOfertaDTO());
+            }
             model.addAttribute("titulo", "Detalle de la publicación");
             return "publicaciones/detalle";
         } catch (EntityNotFoundException e) {
@@ -64,7 +107,9 @@ public class PublicacionWebController {
     /** Formulario de alta */
     @GetMapping("/publicaciones/nueva")
     public String formNueva(Model model) {
-        model.addAttribute("publicacion", new CrearPublicacionDTO());
+        if (!model.containsAttribute("publicacion")) {
+            model.addAttribute("publicacion", new CrearPublicacionDTO());
+        }
         model.addAttribute("titulo", "Crear publicación");
         return "publicaciones/formulario";
     }
@@ -76,6 +121,8 @@ public class PublicacionWebController {
                         RedirectAttributes ra) {
         if (result.hasErrors()) {
             ra.addFlashAttribute("error", "Revisá los datos del formulario");
+            ra.addFlashAttribute("publicacion", dto);
+            ra.addFlashAttribute("org.springframework.validation.BindingResult.publicacion", result);
             return "redirect:/web/publicaciones/nueva";
         }
 
@@ -91,11 +138,67 @@ public class PublicacionWebController {
 
             publicacionService.crearPublicacion(dto, u);
             ra.addFlashAttribute("success", "Publicación creada correctamente");
-            return "redirect:/web/publicaciones";
+            return "redirect:/web/publicaciones/mias";
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Error al crear: " + e.getMessage());
             return "redirect:/web/publicaciones/nueva";
         }
+    }
+
+    @PostMapping("/publicaciones/{id}/ofertas")
+    public String ofertar(@PathVariable Long id,
+                          @Valid @ModelAttribute("nuevaOferta") CrearOfertaDTO dto,
+                          BindingResult result,
+                          RedirectAttributes ra) {
+        if (result.hasErrors()) {
+            ra.addFlashAttribute("errorOferta", "Revisá tu propuesta antes de enviarla");
+            ra.addFlashAttribute("nuevaOferta", dto);
+            ra.addFlashAttribute("org.springframework.validation.BindingResult.nuevaOferta", result);
+            return "redirect:/web/publicaciones/" + id;
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
+            ra.addFlashAttribute("errorOferta", "Necesitás iniciar sesión para ofertar");
+            return "redirect:/web/publicaciones/" + id;
+        }
+
+        try {
+            ofertaService.crearOferta(id, dto, auth.getName());
+            ra.addFlashAttribute("successOferta", "¡Tu oferta fue enviada al propietario!");
+        } catch (EntityNotFoundException e) {
+            ra.addFlashAttribute("errorOferta", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("errorOferta", "No pudimos registrar tu oferta: " + e.getMessage());
+        }
+        return "redirect:/web/publicaciones/" + id;
+    }
+
+    @PostMapping("/publicaciones/{id}/eliminar")
+    public String eliminar(@PathVariable Long id, RedirectAttributes ra) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
+            ra.addFlashAttribute("error", "Necesitás iniciar sesión para eliminar una publicación");
+            return "redirect:/web/publicaciones";
+        }
+
+        try {
+            publicacionService.eliminarPublicacion(id, auth.getName());
+            ra.addFlashAttribute("success", "La publicación se eliminó correctamente");
+        } catch (EntityNotFoundException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        } catch (org.springframework.security.access.AccessDeniedException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", "No pudimos eliminar la publicación: " + e.getMessage());
+        }
+        return "redirect:/web/publicaciones/mias";
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public String manejarArchivoGrande(MaxUploadSizeExceededException ex, RedirectAttributes ra) {
+        ra.addFlashAttribute("error", "La imagen supera el tamaño máximo permitido (5 MB). Reducila e intentá nuevamente.");
+        return "redirect:/web/publicaciones/nueva";
     }
 
     /** Página simple “Acerca” (opcional) */

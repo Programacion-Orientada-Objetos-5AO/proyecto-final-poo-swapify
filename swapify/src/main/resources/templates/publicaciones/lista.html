@@ -4,32 +4,122 @@
 <body>
 <!-- Reemplazamos TODO el body por el layout completo y le pasamos el <section> -->
 <div th:replace="~{base :: layout(${titulo} ?: 'Publicaciones', ~{::section})}">
-  <section>
-    <h1 class="mb-3" th:text="${titulo} ?: 'Publicaciones'">Publicaciones</h1>
-
-    <div class="d-flex justify-content-end mb-3" sec:authorize="isAuthenticated()">
-      <a class="btn btn-primary" th:href="@{/web/publicaciones/nueva}">Nueva publicación</a>
+  <section class="publicaciones-page">
+    <div class="catalog-hero text-white">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-8">
+          <span class="badge text-bg-light text-uppercase text-dark fw-semibold px-3 py-2 mb-3 shadow-sm">Descubrí nuevas oportunidades</span>
+          <h1 class="display-6 fw-bold mb-3" th:text="${titulo} ?: 'Publicaciones disponibles'">Publicaciones disponibles</h1>
+          <p class="lead text-white-50 mb-0" th:text="${misPublicaciones} ? 'Gestioná tus publicaciones activas, revisá ofertas recientes y mantené actualizado tu catálogo personal.' : 'Explorá artículos listos para intercambiar, conectá con usuarios verificados y encontrá el match perfecto para tus objetos.'">Explorá artículos listos para intercambiar, conectá con usuarios verificados y encontrá el match perfecto para tus objetos.</p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+          <div class="d-inline-flex flex-column gap-2 align-items-lg-end align-items-start">
+            <span class="badge bg-white text-dark fs-6 shadow-sm">
+              <i class="bi bi-collection me-2 text-primary"></i>
+              <span th:text="${publicaciones != null ? #lists.size(publicaciones) : 0}">0</span> publicaciones activas
+            </span>
+            <a class="btn btn-light btn-icon" th:href="@{/web/publicaciones/nueva}" sec:authorize="isAuthenticated()">
+              <i class="bi bi-plus-circle"></i> Crear nueva publicación
+            </a>
+            <a class="btn btn-outline-light btn-icon" th:href="@{/web/publicaciones/mias}" th:if="${!misPublicaciones}" th:classappend="${requiereLogin} ? ' disabled'" th:attr="aria-disabled=${requiereLogin}">
+              <i class="bi bi-layout-text-window-reverse"></i> Ver mis publicaciones
+            </a>
+            <a class="btn btn-outline-light btn-icon" th:href="@{/web/publicaciones}" sec:authorize="isAuthenticated()" th:if="${misPublicaciones}">
+              <i class="bi bi-globe"></i> Volver al catálogo general
+            </a>
+            <a class="btn btn-outline-light btn-icon" th:href="@{/web/registro}" sec:authorize="!isAuthenticated()">
+              <i class="bi bi-person-plus"></i> Sumate para publicar
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div th:if="${#lists.isEmpty(publicaciones)}" class="alert alert-info">
-      No hay publicaciones.
+    <div class="catalog-toolbar">
+      <div>
+        <h2 class="h4 fw-semibold mb-1" th:text="${misPublicaciones} ? 'Tus publicaciones activas' : 'Catálogo actualizado'">Catálogo actualizado</h2>
+        <p class="text-body-secondary mb-0" th:text="${misPublicaciones} ? 'Mantené visibles solo los objetos que querés intercambiar y eliminá los que ya concretaste.' : 'Encontrá objetos destacados y contactá al instante con sus dueños.'">Encontrá objetos destacados y contactá al instante con sus dueños.</p>
+      </div>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="badge rounded-pill text-bg-primary" th:if="${!requiereLogin}" sec:authorize="isAuthenticated()">Tu sesión está protegida</span>
+        <span class="badge rounded-pill text-bg-warning text-dark" th:if="${requiereLogin}">
+          <i class="bi bi-lock-fill me-1"></i> Iniciá sesión para gestionar tus publicaciones
+        </span>
+        <span class="badge rounded-pill text-bg-light text-dark" th:if="${!requiereLogin}" sec:authorize="!isAuthenticated()">Iniciá sesión para publicar</span>
+      </div>
     </div>
 
-    <div class="row" th:if="${!#lists.isEmpty(publicaciones)}">
-      <div class="col-md-6 col-lg-4 mb-3" th:each="p : ${publicaciones}">
-        <div class="card pub-card h-100">
-          <div class="card-body">
-            <h5 class="card-title" th:text="${p.nombre}">Nombre</h5>
-            <p class="card-text small text-muted" th:text="${p.descripcion}">Descripción</p>
-            <p class="mb-1"><strong>Objeto a cambiar:</strong> <span th:text="${p.objetoACambiar}">objeto</span></p>
-            <p class="mb-1 pub-price"><span th:text="${p.precio}">0</span></p>
-            <p class="mb-3 pub-meta">
-              <strong>Fecha:</strong> <span th:text="${#temporals.format(p.fechaPublicacion,'dd/MM/yyyy HH:mm')}">--/--/----</span>
-            </p>
-            <p class="mb-3"><strong>Usuario:</strong>
-              <span th:text="${p.usuario != null ? p.usuario.username : p.usuarioUsername}">user</span>
-            </p>
-            <a class="btn btn-outline-primary btn-sm" th:href="@{/web/publicaciones/{id}(id=${p.id})}">Ver detalle</a>
+    <div th:if="${requiereLogin}" class="empty-state">
+      <i class="bi bi-person-lock"></i>
+      <h3 class="h4 fw-semibold mt-3">Iniciá sesión para ver tus publicaciones</h3>
+      <p class="text-body-secondary mb-4">Accedé con tu cuenta para revisar tus ofertas, editar publicaciones o crear nuevas oportunidades.</p>
+      <div class="d-flex flex-wrap justify-content-center gap-3">
+        <a class="btn btn-primary btn-icon" th:href="@{/web/login}"><i class="bi bi-box-arrow-in-right"></i> Iniciar sesión</a>
+        <a class="btn btn-outline-primary btn-icon" th:href="@{/web/registro}"><i class="bi bi-person-plus"></i> Crear cuenta</a>
+      </div>
+    </div>
+
+    <div th:if="${!requiereLogin and #lists.isEmpty(publicaciones)}" class="empty-state">
+      <i class="bi bi-emoji-smile"></i>
+      <h3 class="h4 fw-semibold mt-3" th:text="${misPublicaciones} ? 'Todavía no publicaste nada' : 'Aún no hay publicaciones'">Aún no hay publicaciones</h3>
+      <p class="text-body-secondary mb-4" th:text="${misPublicaciones} ? 'Creá tu primera publicación y empezá a recibir ofertas personalizadas de la comunidad.' : 'Sé la primera persona en compartir un objeto y empezá a recibir propuestas.'">Sé la primera persona en compartir un objeto y empezá a recibir propuestas.</p>
+      <a class="btn btn-primary btn-icon" th:href="@{/web/publicaciones/nueva}" sec:authorize="isAuthenticated()">
+        <i class="bi bi-plus-lg"></i> Publicar ahora
+      </a>
+      <a class="btn btn-outline-primary btn-icon" th:href="@{/web/registro}" sec:authorize="!isAuthenticated()">
+        <i class="bi bi-person-add"></i> Crear cuenta para publicar
+      </a>
+    </div>
+
+    <div class="row g-4" th:if="${!requiereLogin and !#lists.isEmpty(publicaciones)}">
+      <div class="col-md-6 col-xl-4" th:each="p : ${publicaciones}">
+        <div class="card publication-card h-100">
+          <div class="publication-card__media" th:if="${p.tieneImagen()}">
+            <img th:src="${'data:' + (p.imagenContentType != null ? p.imagenContentType : 'image/jpeg') + ';base64,' + T(org.springframework.util.Base64Utils).encodeToString(p.imagen)}"
+                 th:alt="${'Imagen de ' + p.nombre}">
+          </div>
+          <div class="publication-card__media placeholder" th:if="${!p.tieneImagen()}">
+            <i class="bi bi-image"></i>
+          </div>
+          <div class="card-body d-flex flex-column gap-3">
+            <div>
+              <div class="d-flex justify-content-between align-items-start gap-3">
+                <h3 class="h5 card-title mb-0" th:text="${p.nombre}">Nombre de la publicación</h3>
+                <span class="badge text-bg-primary-subtle text-primary">Disponible</span>
+              </div>
+              <p class="card-text text-body-secondary mt-2 mb-0" th:text="${p.descripcion}">Descripción</p>
+            </div>
+            <div class="d-grid gap-2 publication-card__meta">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-left-right text-primary"></i>
+                <span><strong>Intercambio por:</strong> <span th:text="${p.objetoACambiar}">Objeto</span></span>
+              </div>
+              <div class="d-flex align-items-center gap-2" th:if="${p.precio != null}">
+                <i class="bi bi-cash-coin text-success"></i>
+                <span class="publication-card__price" th:text="${p.precio}">0</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-calendar3 text-primary"></i>
+                <span th:text="${#temporals.format(p.fechaPublicacion,'dd/MM/yyyy HH:mm')}">--/--/----</span>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-person-circle text-primary"></i>
+                <span th:text="${p.usuario != null ? p.usuario.username : p.usuarioUsername}">Usuario</span>
+              </div>
+            </div>
+            <div class="d-flex align-items-center justify-content-between mt-auto flex-wrap gap-2">
+              <div class="d-flex gap-2">
+                <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones/{id}(id=${p.id})}">
+                  <i class="bi bi-eye"></i> Ver detalle
+                </a>
+                <form th:if="${misPublicaciones}" th:action="@{/web/publicaciones/{id}/eliminar(id=${p.id})}" method="post" class="d-inline">
+                  <button type="submit" class="btn btn-outline-danger btn-icon" onclick="return confirm('¿Seguro que querés eliminar esta publicación?')">
+                    <i class="bi bi-trash"></i> Eliminar
+                  </button>
+                </form>
+              </div>
+              <span class="text-body-secondary small">ID #<span th:text="${p.id}">1</span></span>
+            </div>
           </div>
         </div>
       </div>

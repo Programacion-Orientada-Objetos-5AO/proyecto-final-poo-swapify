@@ -32,9 +32,12 @@ public class PublicacionRepositoryTest {
         Usuario usuario = new Usuario("test@example.com", "password");
         entityManager.persistAndFlush(usuario);
 
-        Publicacion pub1 = new Publicacion(null, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1", fecha1, usuario);
-        Publicacion pub2 = new Publicacion(null, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2", fecha2, usuario);
-        Publicacion pub3 = new Publicacion(null, "Libro3", new BigDecimal("300.00"), "Desc3", "Obj3", fecha3, usuario);
+        Publicacion pub1 = new Publicacion(null, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1",
+                fecha1, usuario, null, null);
+        Publicacion pub2 = new Publicacion(null, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2",
+                fecha2, usuario, null, null);
+        Publicacion pub3 = new Publicacion(null, "Libro3", new BigDecimal("300.00"), "Desc3", "Obj3",
+                fecha3, usuario, null, null);
 
         entityManager.persistAndFlush(pub1);
         entityManager.persistAndFlush(pub2);
@@ -59,9 +62,12 @@ public class PublicacionRepositoryTest {
         Usuario usuario = new Usuario("test@example.com", "password");
         entityManager.persistAndFlush(usuario);
 
-        Publicacion pub1 = new Publicacion(null, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1", fecha1, usuario);
-        Publicacion pub2 = new Publicacion(null, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2", fecha2, usuario);
-        Publicacion pub3 = new Publicacion(null, "Libro3", new BigDecimal("300.00"), "Desc3", "Obj3", fecha3, usuario);
+        Publicacion pub1 = new Publicacion(null, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1",
+                fecha1, usuario, null, null);
+        Publicacion pub2 = new Publicacion(null, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2",
+                fecha2, usuario, null, null);
+        Publicacion pub3 = new Publicacion(null, "Libro3", new BigDecimal("300.00"), "Desc3", "Obj3",
+                fecha3, usuario, null, null);
 
         entityManager.persistAndFlush(pub1);
         entityManager.persistAndFlush(pub2);

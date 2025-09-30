@@ -3,20 +3,139 @@
 <head><meta charset="UTF-8"><title>Detalle</title></head>
 <body>
 <div th:replace="~{base :: layout(${titulo} ?: 'Detalle', ~{::section})}">
-  <section>
-    <a class="btn btn-link p-0 mb-3" th:href="@{/web/publicaciones}">← Volver</a>
-    <h1 class="mb-3" th:text="${titulo} ?: 'Detalle de la publicación'">Detalle</h1>
+  <section class="detail-layout">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones}"><i class="bi bi-arrow-left"></i> Volver al catálogo</a>
+        <h1 class="display-6 fw-bold mt-4 mb-1" th:text="${titulo} ?: 'Detalle de la publicación'">Detalle</h1>
+        <p class="text-body-secondary mb-0">Revisá la información clave antes de confirmar tu propuesta de intercambio.</p>
+      </div>
+      <span class="badge-soft">ID #<span th:text="${publicacion.id}">1</span></span>
+    </div>
 
-    <div class="card">
-      <div class="card-body">
-        <h4 class="card-title" th:text="${publicacion.nombre}">Nombre</h4>
-        <p class="card-text" th:text="${publicacion.descripcion}">Descripción</p>
-        <p class="mb-1"><strong>Objeto a cambiar:</strong> <span th:text="${publicacion.objetoACambiar}">objeto</span></p>
-        <p class="mb-1"><strong>Precio ref.:</strong> <span th:text="${publicacion.precio}">0</span></p>
-        <p class="mb-1"><strong>Fecha:</strong> <span th:text="${#temporals.format(publicacion.fechaPublicacion,'dd/MM/yyyy HH:mm')}">fecha</span></p>
-        <p class="mb-0"><strong>Usuario:</strong>
-          <span th:text="${publicacion.usuario != null ? publicacion.usuario.username : publicacion.usuarioUsername}">user</span>
-        </p>
+    <div class="row g-4 align-items-start">
+      <div class="col-lg-8">
+        <div class="card detail-card">
+          <div class="card-body p-4 p-lg-5 d-grid gap-4">
+            <div>
+              <span class="badge text-bg-primary-subtle text-primary text-uppercase fw-semibold mb-3">Publicación destacada</span>
+              <h2 class="h3 fw-semibold mb-2" th:text="${publicacion.nombre}">Nombre</h2>
+              <p class="text-body-secondary mb-0" th:text="${publicacion.descripcion}">Descripción</p>
+            </div>
+            <div class="publication-media" th:if="${publicacion.tieneImagen()}">
+              <img class="publication-media__img"
+                   th:src="${'data:' + (publicacion.imagenContentType != null ? publicacion.imagenContentType : 'image/jpeg') + ';base64,' + T(org.springframework.util.Base64Utils).encodeToString(publicacion.imagen)}"
+                   th:alt="${'Imagen de ' + publicacion.nombre}">
+            </div>
+            <div class="publication-media placeholder" th:if="${!publicacion.tieneImagen()}">
+              <div class="placeholder-inner">
+                <i class="bi bi-image"></i>
+                <p class="mb-0">El autor aún no cargó una imagen para este artículo.</p>
+              </div>
+            </div>
+            <div class="detail-meta">
+              <div class="detail-meta-item">
+                <i class="bi bi-arrow-left-right"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Busca intercambiar por</p>
+                  <p class="mb-0 text-body-secondary" th:text="${publicacion.objetoACambiar}">Objeto</p>
+                </div>
+              </div>
+              <div class="detail-meta-item" th:if="${publicacion.precio != null}">
+                <i class="bi bi-cash-stack"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Valor de referencia</p>
+                  <p class="mb-0 text-success fw-bold" th:text="${publicacion.precio}">0</p>
+                </div>
+              </div>
+              <div class="detail-meta-item">
+                <i class="bi bi-calendar-event"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Publicada el</p>
+                  <p class="mb-0 text-body-secondary" th:text="${#temporals.format(publicacion.fechaPublicacion,'dd/MM/yyyy HH:mm')}">Fecha</p>
+                </div>
+              </div>
+              <div class="detail-meta-item">
+                <i class="bi bi-person-badge"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Publicado por</p>
+                  <p class="mb-0 text-body-secondary" th:text="${publicacion.usuario != null ? publicacion.usuario.username : publicacion.usuarioUsername}">Usuario</p>
+                </div>
+              </div>
+            </div>
+            <div class="detail-actions">
+              <a class="btn btn-primary btn-icon" href="#ofertas"><i class="bi bi-chat-text"></i> Ver ofertas</a>
+              <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones/nueva}" sec:authorize="isAuthenticated()">
+                <i class="bi bi-plus-circle"></i> Publicar algo similar
+              </a>
+              <a class="btn btn-outline-secondary btn-icon" th:href="@{/web/registro}" sec:authorize="!isAuthenticated()">
+                <i class="bi bi-person-plus"></i> Registrate para proponer</a>
+            </div>
+          </div>
+        </div>
+        <div id="ofertas" class="card mt-4 detail-offers">
+          <div class="card-header d-flex flex-wrap gap-3 align-items-center justify-content-between">
+            <div>
+              <h3 class="h5 fw-semibold mb-1">Ofertas recibidas</h3>
+              <p class="text-body-secondary mb-0">Consultá las propuestas de la comunidad y respondé desde tu bandeja.</p>
+            </div>
+            <span class="badge text-bg-primary-subtle text-primary" th:text="${#lists.size(ofertas)} + ' ofertas'">0 ofertas</span>
+          </div>
+          <div class="card-body p-4 p-lg-5">
+            <div th:if="${successOferta != null}" class="alert alert-success" th:text="${successOferta}">Oferta enviada</div>
+            <div th:if="${errorOferta != null}" class="alert alert-danger" th:text="${errorOferta}">Error</div>
+
+            <div class="offer-form" sec:authorize="isAuthenticated()">
+              <h4 class="h6 fw-semibold mb-3">Proponer intercambio</h4>
+              <form th:action="@{/web/publicaciones/{id}/ofertas(id=${publicacion.id})}" method="post" class="vstack gap-3" th:object="${nuevaOferta}">
+                <div>
+                  <label class="form-label">¿Qué ofrecés a cambio? *</label>
+                  <textarea class="form-control" rows="3" th:field="*{mensaje}" placeholder="Describí tu propuesta" required></textarea>
+                </div>
+                <div>
+                  <label class="form-label">Objeto propuesto (opcional)</label>
+                  <input type="text" class="form-control" th:field="*{propuestaObjeto}" placeholder="Ej: Consola Nintendo Switch">
+                </div>
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-success btn-icon"><i class="bi bi-send"></i> Enviar oferta</button>
+                  <a class="btn btn-outline-secondary" th:href="@{/web/publicaciones/{id}(id=${publicacion.id})}">Limpiar</a>
+                </div>
+              </form>
+            </div>
+            <div class="alert alert-info" sec:authorize="!isAuthenticated()">
+              <i class="bi bi-info-circle me-2"></i>Iniciá sesión para enviar tu oferta y continuar la conversación.
+            </div>
+
+            <div th:if="${#lists.isEmpty(ofertas)}" class="empty-offers">
+              <i class="bi bi-envelope-open"></i>
+              <p class="mb-1 fw-semibold">Todavía no hay ofertas.</p>
+              <p class="mb-0 text-body-secondary">Sé la primera persona en proponer un intercambio.</p>
+            </div>
+
+            <div class="offer-timeline" th:if="${!#lists.isEmpty(ofertas)}">
+              <div class="offer-card" th:each="oferta : ${ofertas}">
+                <div class="d-flex justify-content-between flex-wrap gap-2">
+                  <div>
+                    <p class="fw-semibold mb-1" th:text="${oferta.usuario != null ? oferta.usuario.username : 'Usuario Swapify'}">usuario</p>
+                    <p class="mb-0 text-body-secondary" th:text="${#temporals.format(oferta.fechaOferta,'dd/MM/yyyy HH:mm')}">fecha</p>
+                  </div>
+                  <span class="badge text-bg-light text-dark" th:if="${oferta.propuestaObjeto != null && !oferta.propuestaObjeto.isBlank()}" th:text="${oferta.propuestaObjeto}">Objeto</span>
+                </div>
+                <p class="mt-3 mb-0" th:text="${oferta.mensaje}">Mensaje</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="form-guidelines">
+          <h3 class="mb-3"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Tips para un intercambio exitoso</h3>
+          <ul>
+            <li>Confirmá los detalles del objeto y acordá un punto de encuentro seguro.</li>
+            <li>Revisá el historial y las calificaciones de la persona con quien vas a intercambiar.</li>
+            <li>Guardá toda la conversación dentro de Swapify para mayor tranquilidad.</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
