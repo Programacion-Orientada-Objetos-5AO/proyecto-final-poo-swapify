@@ -56,24 +56,34 @@ public class PublicacionService {
         MultipartFile archivo = dto.getImagenArchivo();
         if (archivo != null && !archivo.isEmpty()) {
             try {
-                String contentType = normalizarContentType(archivo.getContentType());
                 byte[] bytes = archivo.getBytes();
-                guardarImagen(p, bytes, contentType);
+                if (bytes.length == 0) {
+                    throw new IllegalArgumentException("La imagen es obligatoria");
+                }
+                guardarImagen(p, bytes, archivo.getContentType());
             } catch (IOException e) {
                 throw new IllegalArgumentException("No se pudo leer la imagen: " + e.getMessage(), e);
             }
         } else if (dto.getImagenBase64() != null && !dto.getImagenBase64().isBlank()) {
-            try {
-                String base64Data = dto.getImagenBase64();
-                if (base64Data.contains(",")) {
-                    base64Data = base64Data.substring(base64Data.indexOf(',') + 1);
-                }
-                String contentType = normalizarContentType(dto.getImagenContentType());
-                byte[] bytes = Base64.getDecoder().decode(base64Data);
-                guardarImagen(p, bytes, contentType);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Formato de imagen inválido", e);
+            String base64Data = dto.getImagenBase64();
+            if (base64Data.contains(",")) {
+                base64Data = base64Data.substring(base64Data.indexOf(',') + 1);
             }
+
+            byte[] bytes;
+            try {
+                bytes = decodificarBase64(base64Data);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("La imagen está dañada o tiene un formato inválido");
+            }
+
+            if (bytes.length == 0) {
+                throw new IllegalArgumentException("La imagen es obligatoria");
+            }
+
+            guardarImagen(p, bytes, dto.getImagenContentType());
+        } else {
+            throw new IllegalArgumentException("La imagen es obligatoria");
         }
         Publicacion guardada = publicacionRepository.save(p);
         prepararPublicacionParaLectura(guardada);
@@ -148,18 +158,30 @@ public class PublicacionService {
             return;
         }
 
-        if (bytes.length > MAX_IMAGE_BYTES) {
-            throw new IllegalArgumentException("La imagen supera el tamaño máximo permitido (5 MB)");
-        }
+        String tipoNormalizado = normalizarContentType(contentType);
+        byte[] originales = bytes;
 
         try {
-            ImagenProcesada procesada = optimizarImagen(bytes, contentType);
-            publicacion.setImagen(procesada.datos());
+            ImagenProcesada procesada = optimizarImagen(bytes, tipoNormalizado);
+            byte[] optimizadas = procesada.datos();
+            if (optimizadas != null && optimizadas.length > MAX_IMAGE_BYTES) {
+                throw new IllegalArgumentException("La imagen supera el tamaño máximo permitido (5 MB)");
+            }
+            publicacion.setImagen(optimizadas);
             publicacion.setImagenContentType(procesada.contentType());
+        } catch (OutOfMemoryError e) {
+            log.error("Sin memoria para procesar la imagen ({} bytes)", bytes != null ? bytes.length : -1, e);
+            throw new IllegalArgumentException("La imagen es demasiado grande para procesarla. Reducila e intentá nuevamente.");
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
             log.warn("No se pudo optimizar la imagen, se almacenará el archivo original", e);
-            publicacion.setImagen(bytes);
-            publicacion.setImagenContentType(normalizarContentType(contentType));
+            byte[] copia = originales != null ? originales.clone() : null;
+            if (copia != null && copia.length > MAX_IMAGE_BYTES) {
+                throw new IllegalArgumentException("La imagen supera el tamaño máximo permitido (5 MB)");
+            }
+            publicacion.setImagen(copia);
+            publicacion.setImagenContentType(tipoNormalizado);
         }
     }
 
@@ -173,11 +195,49 @@ public class PublicacionService {
             publicacion.getUsuario().getUsername();
         }
 
-        if (publicacion.getImagen() != null) {
+        byte[] imagen = publicacion.getImagen();
+        if (imagen != null && imagen.length > 0) {
             // getImagen realiza una copia defensiva; volvemos a setearla para
             // asegurarnos de contar con un array independiente de la sesión JPA.
-            publicacion.setImagen(publicacion.getImagen());
+            publicacion.setImagen(imagen);
+
+            String base64 = java.util.Base64.getEncoder().encodeToString(imagen);
+            publicacion.setImagenBase64(base64);
+
+            String contentType = publicacion.getImagenContentType();
+            if (contentType == null || contentType.isBlank()) {
+                contentType = "image/jpeg";
+            }
+            publicacion.setImagenDataUri("data:" + contentType + ";base64," + base64);
+        } else {
+            publicacion.setImagen(null);
+            publicacion.setImagenBase64(null);
+            publicacion.setImagenDataUri(null);
         }
+    }
+
+    private byte[] decodificarBase64(String base64Data) {
+        if (base64Data == null) {
+            return new byte[0];
+        }
+
+        StringBuilder limpio = new StringBuilder(base64Data.length());
+        for (int i = 0; i < base64Data.length(); i++) {
+            char c = base64Data.charAt(i);
+            if (c == ' ') {
+                limpio.append('+');
+                continue;
+            }
+            if (!Character.isWhitespace(c)) {
+                limpio.append(c);
+            }
+        }
+
+        if (limpio.length() == 0) {
+            return new byte[0];
+        }
+
+        return Base64.getMimeDecoder().decode(limpio.toString());
     }
 
     private String normalizarContentType(String contentType) {

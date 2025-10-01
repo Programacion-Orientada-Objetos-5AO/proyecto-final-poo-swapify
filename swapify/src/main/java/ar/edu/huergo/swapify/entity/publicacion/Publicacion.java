@@ -19,7 +19,7 @@ import lombok.ToString;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"usuario", "imagen"})
+@ToString(exclude = {"usuario", "imagen", "imagenBase64", "imagenDataUri"})
 public class Publicacion {
 
     @Id
@@ -58,6 +58,12 @@ public class Publicacion {
     @Column(name = "imagen_content_type", length = 100)
     private String imagenContentType;
 
+    @Transient
+    private String imagenBase64;
+
+    @Transient
+    private String imagenDataUri;
+
     @PrePersist
     public void prePersist() {
         if (this.fechaPublicacion == null) {
@@ -72,6 +78,8 @@ public class Publicacion {
     public void limpiarImagen() {
         this.imagen = null;
         this.imagenContentType = null;
+        this.imagenBase64 = null;
+        this.imagenDataUri = null;
     }
 
     public byte[] getImagen() {

@@ -195,12 +195,6 @@ public class PublicacionWebController {
         return "redirect:/web/publicaciones/mias";
     }
 
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public String manejarArchivoGrande(MaxUploadSizeExceededException ex, RedirectAttributes ra) {
-        ra.addFlashAttribute("error", "La imagen supera el tamaño máximo permitido (5 MB). Reducila e intentá nuevamente.");
-        return "redirect:/web/publicaciones/nueva";
-    }
-
     /** Página simple “Acerca” (opcional) */
     @GetMapping("/acerca")
     public String acerca(Model model) {

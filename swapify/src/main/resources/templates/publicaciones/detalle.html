@@ -22,12 +22,12 @@
               <h2 class="h3 fw-semibold mb-2" th:text="${publicacion.nombre}">Nombre</h2>
               <p class="text-body-secondary mb-0" th:text="${publicacion.descripcion}">Descripción</p>
             </div>
-            <div class="publication-media" th:if="${publicacion.tieneImagen()}">
+            <div class="publication-media" th:if="${publicacion.imagenDataUri != null}">
               <img class="publication-media__img"
-                   th:src="${'data:' + (publicacion.imagenContentType != null ? publicacion.imagenContentType : 'image/jpeg') + ';base64,' + T(org.springframework.util.Base64Utils).encodeToString(publicacion.imagen)}"
+                   th:src="${publicacion.imagenDataUri}"
                    th:alt="${'Imagen de ' + publicacion.nombre}">
             </div>
-            <div class="publication-media placeholder" th:if="${!publicacion.tieneImagen()}">
+            <div class="publication-media placeholder" th:if="${publicacion.imagenDataUri == null}">
               <div class="placeholder-inner">
                 <i class="bi bi-image"></i>
                 <p class="mb-0">El autor aún no cargó una imagen para este artículo.</p>

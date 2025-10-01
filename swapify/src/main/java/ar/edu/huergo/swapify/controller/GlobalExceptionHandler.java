@@ -3,6 +3,8 @@ package ar.edu.huergo.swapify.controller;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -12,10 +14,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 
 /**
  * Manejador global de excepciones de la API.
@@ -34,6 +39,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j // Lombok: inyecta un logger SLF4J llamado 'log'
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final long MAX_JSON_STRING_LENGTH = 20_000_000L;
+    private static final Pattern LENGTH_PATTERN = Pattern.compile("length \\((\\d+)\\)");
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
@@ -59,6 +67,35 @@ public class GlobalExceptionHandler {
         problem.setType(URI.create("https://http.dev/problems/constraint-violation"));
         // Log de advertencia con el detalle de la violación
         log.warn("Violación de constraint: {}", ex.getMessage());
+        return problem;
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getCause();
+        if (cause instanceof JsonMappingException mappingEx) {
+            Throwable root = mappingEx.getCause();
+            if (root instanceof StreamConstraintsException constraintsEx) {
+                long actual = extraerLongitud(constraintsEx.getMessage());
+                log.warn("Payload Base64 rechazado: longitud {} mayor al límite {}", actual, MAX_JSON_STRING_LENGTH);
+
+                ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.PAYLOAD_TOO_LARGE);
+                problem.setTitle("Imagen demasiado grande");
+                problem.setDetail("La imagen codificada supera el máximo permitido por la API (20 MB). Reducila e intentá nuevamente.");
+                problem.setType(URI.create("https://http.dev/problems/file-too-large"));
+                if (actual > 0) {
+                    problem.setProperty("tamanioActual", actual);
+                }
+                problem.setProperty("limite", MAX_JSON_STRING_LENGTH);
+                return problem;
+            }
+        }
+
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problem.setTitle("Cuerpo de la solicitud inválido");
+        problem.setDetail("No se pudo interpretar la solicitud enviada");
+        problem.setType(URI.create("https://http.dev/problems/unreadable-body"));
+        log.warn("No se pudo leer el cuerpo de la solicitud: {}", ex.getMessage());
         return problem;
     }
 
@@ -119,7 +156,19 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    
+    private long extraerLongitud(String mensaje) {
+        if (mensaje == null) {
+            return -1L;
+        }
+        Matcher matcher = LENGTH_PATTERN.matcher(mensaje);
+        if (matcher.find()) {
+            try {
+                return Long.parseLong(matcher.group(1));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return -1L;
+    }
 }
 
 

@@ -3,6 +3,7 @@ package ar.edu.huergo.swapify.dto.publicacion;
 import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
@@ -30,4 +31,12 @@ public class CrearPublicacionDTO {
 
     @JsonIgnore
     private transient MultipartFile imagenArchivo;
+
+    @JsonIgnore
+    @AssertTrue(message = "La imagen es obligatoria")
+    public boolean isImagenPresente() {
+        boolean tieneArchivo = imagenArchivo != null && !imagenArchivo.isEmpty();
+        boolean tieneBase64 = imagenBase64 != null && !imagenBase64.isBlank();
+        return tieneArchivo || tieneBase64;
+    }
 }

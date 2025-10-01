@@ -48,7 +48,7 @@ public class PublicacionTest {
         byte[] imagen = new byte[] {9, 8, 7};
         String contentType = "image/jpeg";
         Publicacion publicacion = new Publicacion(2L, "Mesa", new BigDecimal("200.00"),
-                "Mesa de madera", "Silla", fecha, usuario, imagen, contentType);
+                "Mesa de madera", "Silla", fecha, usuario, imagen, contentType, null, null);
 
         assertEquals(2L, publicacion.getId());
         assertEquals("Mesa", publicacion.getNombre());

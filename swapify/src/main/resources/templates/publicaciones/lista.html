@@ -74,11 +74,11 @@
     <div class="row g-4" th:if="${!requiereLogin and !#lists.isEmpty(publicaciones)}">
       <div class="col-md-6 col-xl-4" th:each="p : ${publicaciones}">
         <div class="card publication-card h-100">
-          <div class="publication-card__media" th:if="${p.tieneImagen()}">
-            <img th:src="${'data:' + (p.imagenContentType != null ? p.imagenContentType : 'image/jpeg') + ';base64,' + T(org.springframework.util.Base64Utils).encodeToString(p.imagen)}"
+          <div class="publication-card__media" th:if="${p.imagenDataUri != null}">
+            <img th:src="${p.imagenDataUri}"
                  th:alt="${'Imagen de ' + p.nombre}">
           </div>
-          <div class="publication-card__media placeholder" th:if="${!p.tieneImagen()}">
+          <div class="publication-card__media placeholder" th:if="${p.imagenDataUri == null}">
             <i class="bi bi-image"></i>
           </div>
           <div class="card-body d-flex flex-column gap-3">
