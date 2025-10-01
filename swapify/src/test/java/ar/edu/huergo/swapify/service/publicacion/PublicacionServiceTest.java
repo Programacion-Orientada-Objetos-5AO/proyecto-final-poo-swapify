@@ -53,7 +53,7 @@ public class PublicacionServiceTest {
     @InjectMocks
     private PublicacionService publicacionService;
 
-    @Test
+    @Test.
     public void testCrearPublicacion_Success() {
         // Given
         CrearPublicacionDTO dto = new CrearPublicacionDTO();
