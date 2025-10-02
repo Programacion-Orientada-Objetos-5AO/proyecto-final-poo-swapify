@@ -161,14 +161,8 @@ public class PublicacionService {
         String tipoNormalizado = normalizarContentType(contentType);
         byte[] originales = bytes;
 
-        BufferedImage original = null;
         try {
-            original = leerImagen(bytes);
-            if (original == null) {
-                throw new IllegalArgumentException("La imagen está dañada o tiene un formato inválido");
-            }
-
-            ImagenProcesada procesada = optimizarImagen(bytes, tipoNormalizado, original);
+            ImagenProcesada procesada = optimizarImagen(bytes, tipoNormalizado);
             byte[] optimizadas = procesada.datos();
             if (optimizadas != null && optimizadas.length > MAX_IMAGE_BYTES) {
                 throw new IllegalArgumentException("La imagen supera el tamaño máximo permitido (5 MB)");
@@ -178,8 +172,6 @@ public class PublicacionService {
         } catch (OutOfMemoryError e) {
             log.error("Sin memoria para procesar la imagen ({} bytes)", bytes != null ? bytes.length : -1, e);
             throw new IllegalArgumentException("La imagen es demasiado grande para procesarla. Reducila e intentá nuevamente.");
-        } catch (IOException e) {
-            throw new IllegalArgumentException("La imagen está dañada o tiene un formato inválido", e);
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
@@ -258,115 +250,111 @@ public class PublicacionService {
         return contentType.toLowerCase();
     }
 
-    private ImagenProcesada optimizarImagen(byte[] data, String contentType, BufferedImage original) throws IOException {
+    private ImagenProcesada optimizarImagen(byte[] data, String contentType) {
         if (data == null || data.length == 0) {
+            return new ImagenProcesada(data, contentType);
+        }
+
+        try {
+            byte[] ajustada = escalarSiEsNecesario(data, contentType);
+            if (ajustada == null) {
+                ajustada = data;
+            }
+            String tipoActual = contentType;
+            if (ajustada.length > MAX_IMAGE_BYTES) {
+                ajustada = recomprimirComoJpeg(ajustada);
+                tipoActual = "image/jpeg";
+            }
+            return new ImagenProcesada(ajustada, normalizarContentType(tipoActual));
+        } catch (IOException e) {
+            log.debug("Fallo al optimizar imagen, se usará el archivo original", e);
             return new ImagenProcesada(data, normalizarContentType(contentType));
         }
-
-        byte[] procesada = data;
-        BufferedImage imagenBase = original;
-
-        EscaladoResult escalado = escalarSiEsNecesario(original, contentType);
-        if (escalado != null) {
-            procesada = escalado.datos();
-            imagenBase = escalado.imagen();
-        }
-
-        if (procesada.length > MAX_IMAGE_BYTES) {
-            procesada = recomprimirComoJpeg(imagenBase);
-            return new ImagenProcesada(procesada, "image/jpeg");
-        }
-
-        return new ImagenProcesada(procesada, normalizarContentType(contentType));
     }
 
-    private EscaladoResult escalarSiEsNecesario(BufferedImage original, String contentType) throws IOException {
-        int width = original.getWidth();
-        int height = original.getHeight();
-        int maxDimension = Math.max(width, height);
-        if (maxDimension <= MAX_IMAGE_DIMENSION) {
-            return null;
-        }
-
-        double scale = (double) MAX_IMAGE_DIMENSION / maxDimension;
-        int newWidth = (int) Math.round(width * scale);
-        int newHeight = (int) Math.round(height * scale);
-
-        boolean formatoConTransparencia = contentType != null && (contentType.contains("png") || contentType.contains("gif"));
-        boolean requiereTransparencia = formatoConTransparencia && original.getColorModel() != null
-                && original.getColorModel().hasAlpha();
-        int imageType = requiereTransparencia ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB;
-
-        BufferedImage escalada = new BufferedImage(newWidth, newHeight, imageType);
-        Graphics2D g2d = escalada.createGraphics();
-        try {
-            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.drawImage(original, 0, 0, newWidth, newHeight, null);
-        } finally {
-            g2d.dispose();
-        }
-
-        String format = obtenerFormatoDesdeContentType(contentType);
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            if (!ImageIO.write(escalada, format, baos)) {
-                return null;
-            }
-            return new EscaladoResult(baos.toByteArray(), escalada);
-        }
-    }
-
-    private byte[] recomprimirComoJpeg(BufferedImage image) throws IOException {
-        BufferedImage rgb = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2d = rgb.createGraphics();
-        try {
-            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-            g2d.drawImage(image, 0, 0, null);
-        } finally {
-            g2d.dispose();
-        }
-
-        java.util.Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
-        if (!writers.hasNext()) {
-            try (ByteArrayOutputStream fallback = new ByteArrayOutputStream()) {
-                if (!ImageIO.write(rgb, "jpg", fallback)) {
-                    return convertirBufferedImageABytes(image, "jpg");
-                }
-                return fallback.toByteArray();
-            }
-        }
-
-        ImageWriter writer = writers.next();
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ImageOutputStream ios = ImageIO.createImageOutputStream(baos)) {
-            writer.setOutput(ios);
-            ImageWriteParam param = writer.getDefaultWriteParam();
-            if (param.canWriteCompressed()) {
-                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                param.setCompressionQuality(0.8f);
-            }
-            writer.write(null, new IIOImage(rgb, null, null), param);
-            ios.flush();
-            return baos.toByteArray();
-        } finally {
-            writer.dispose();
-        }
-    }
-
-    private byte[] convertirBufferedImageABytes(BufferedImage image, String format) throws IOException {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            if (!ImageIO.write(image, format, baos)) {
-                return new byte[0];
-            }
-            return baos.toByteArray();
-        }
-    }
-
-    private BufferedImage leerImagen(byte[] data) throws IOException {
+    private byte[] escalarSiEsNecesario(byte[] data, String contentType) throws IOException {
         try (ByteArrayInputStream input = new ByteArrayInputStream(data)) {
-            return ImageIO.read(input);
+            BufferedImage original = ImageIO.read(input);
+            if (original == null) {
+                return data;
+            }
+
+            int width = original.getWidth();
+            int height = original.getHeight();
+            int maxDimension = Math.max(width, height);
+            if (maxDimension <= MAX_IMAGE_DIMENSION) {
+                return data;
+            }
+
+            double scale = (double) MAX_IMAGE_DIMENSION / maxDimension;
+            int newWidth = (int) Math.round(width * scale);
+            int newHeight = (int) Math.round(height * scale);
+
+            boolean soportaTransparencia = contentType != null && (contentType.contains("png") || contentType.contains("gif"));
+            int imageType = soportaTransparencia ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB;
+
+            BufferedImage escalada = new BufferedImage(newWidth, newHeight, imageType);
+            Graphics2D g2d = escalada.createGraphics();
+            try {
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.drawImage(original, 0, 0, newWidth, newHeight, null);
+            } finally {
+                g2d.dispose();
+            }
+
+            String format = obtenerFormatoDesdeContentType(contentType);
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                if (!ImageIO.write(escalada, format, baos)) {
+                    return data;
+                }
+                return baos.toByteArray();
+            }
+        }
+    }
+
+    private byte[] recomprimirComoJpeg(byte[] data) throws IOException {
+        try (ByteArrayInputStream input = new ByteArrayInputStream(data)) {
+            BufferedImage original = ImageIO.read(input);
+            if (original == null) {
+                return data;
+            }
+
+            BufferedImage rgb = new BufferedImage(original.getWidth(), original.getHeight(), BufferedImage.TYPE_INT_RGB);
+            Graphics2D g2d = rgb.createGraphics();
+            try {
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2d.drawImage(original, 0, 0, null);
+            } finally {
+                g2d.dispose();
+            }
+
+            ImageWriter writer = ImageIO.getImageWritersByFormatName("jpg").hasNext()
+                    ? ImageIO.getImageWritersByFormatName("jpg").next()
+                    : null;
+            if (writer == null) {
+                try (ByteArrayOutputStream fallback = new ByteArrayOutputStream()) {
+                    if (!ImageIO.write(rgb, "jpg", fallback)) {
+                        return data;
+                    }
+                    return fallback.toByteArray();
+                }
+            }
+
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                 ImageOutputStream ios = ImageIO.createImageOutputStream(baos)) {
+                writer.setOutput(ios);
+                ImageWriteParam param = writer.getDefaultWriteParam();
+                if (param.canWriteCompressed()) {
+                    param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                    param.setCompressionQuality(0.8f);
+                }
+                writer.write(null, new IIOImage(rgb, null, null), param);
+                writer.dispose();
+                return baos.toByteArray();
+            }
         }
     }
 
@@ -401,24 +389,6 @@ public class PublicacionService {
 
         public String contentType() {
             return contentType;
-        }
-    }
-
-    private static class EscaladoResult {
-        private final byte[] datos;
-        private final BufferedImage imagen;
-
-        private EscaladoResult(byte[] datos, BufferedImage imagen) {
-            this.datos = datos;
-            this.imagen = imagen;
-        }
-
-        public byte[] datos() {
-            return datos;
-        }
-
-        public BufferedImage imagen() {
-            return imagen;
         }
     }
 }
