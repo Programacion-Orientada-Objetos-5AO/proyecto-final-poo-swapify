@@ -13,6 +13,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import ar.edu.huergo.swapify.controller.GlobalExceptionHandler;
 
+import ar.edu.huergo.swapify.controller.GlobalExceptionHandler;
+
 import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import com.fasterxml.jackson.databind.JsonMappingException;
