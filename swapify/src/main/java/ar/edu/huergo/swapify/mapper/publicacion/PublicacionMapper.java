@@ -11,9 +11,20 @@ import ar.edu.huergo.swapify.dto.publicacion.CrearPublicacionDTO;
 import ar.edu.huergo.swapify.dto.publicacion.MostrarPublicacionDTO;
 import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
 
+/**
+ * Transforma entidades de publicaciones en sus correspondientes DTO y viceversa
+ * para desacoplar la capa web del modelo de datos.
+ */
 @Component
 public class PublicacionMapper {
 
+    /**
+     * Convierte una entidad {@link Publicacion} en un DTO de visualización.
+     *
+     * @param publicacion entidad a transformar.
+     * @return representación lista para las vistas o {@code null} si el origen es
+     *         {@code null}.
+     */
     public MostrarPublicacionDTO toDTO(Publicacion publicacion) {
         if (publicacion == null) {
             return null;
@@ -31,6 +42,12 @@ public class PublicacionMapper {
         );
     }
 
+    /**
+     * Convierte una lista de publicaciones en sus DTO correspondientes.
+     *
+     * @param publicaciones coleccion de entidades a mapear.
+     * @return lista nunca nula de DTO.
+     */
     public List<MostrarPublicacionDTO> toDTOList(List<Publicacion> publicaciones) {
         if (publicaciones == null) {
             return new ArrayList<>();
@@ -40,7 +57,13 @@ public class PublicacionMapper {
                 .collect(Collectors.toList());
     }
 
-    // Opcional: para crear la entidad desde el DTO de creación
+    /**
+     * Construye una entidad base a partir del DTO de creación omitiendo los
+     * atributos calculados por la persistencia.
+     *
+     * @param dto datos recibidos desde el formulario de creación.
+     * @return nueva instancia inicializada con los valores del DTO.
+     */
     public Publicacion toEntity(CrearPublicacionDTO dto) {
         if (dto == null) {
             return null;
@@ -50,7 +73,6 @@ public class PublicacionMapper {
         p.setPrecio(dto.getPrecio());
         p.setDescripcion(dto.getDescripcion());
         p.setObjetoACambiar(dto.getObjetoACambiar());
-        // fechaPublicacion se setea en @PrePersist de la entidad
         return p;
     }
 }

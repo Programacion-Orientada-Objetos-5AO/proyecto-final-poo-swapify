@@ -10,6 +10,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
+/**
+ * Entidad que representa un rol de autorización asignable a las personas
+ * usuarias del sistema.
+ */
 @Entity
 @Data
 @NoArgsConstructor
@@ -21,9 +25,17 @@ public class Rol {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * Nombre único del rol (por ejemplo {@code ADMIN} o {@code CLIENTE}).
+     */
     @Column(nullable = false, unique = true, length = 50)
-    private String nombre; // Ej: ADMIN, CLIENTE
+    private String nombre;
 
+    /**
+     * Construye un rol únicamente con su nombre.
+     *
+     * @param nombre identificador legible del rol.
+     */
     public Rol(String nombre) {
         this.nombre = nombre;
     }

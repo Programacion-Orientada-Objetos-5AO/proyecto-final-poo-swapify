@@ -17,6 +17,9 @@ import ar.edu.huergo.swapify.service.security.JwtTokenService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Endpoints de autenticación para el consumo del cliente SPA o móvil.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -26,20 +29,17 @@ public class AuthController {
     private final JwtTokenService jwtTokenService;
     private final UserDetailsService userDetailsService;
 
-
+    /**
+     * Autentica credenciales y devuelve un token JWT con los roles asociados.
+     */
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody @Valid LoginDTO request) {
-        // 1) Autenticar credenciales username/password (lanza excepción si no son válidas)
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.username(), request.password()));
-
-        // 2) Cargar UserDetails y derivar roles/authorities
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
         List<String> roles =
                 userDetails.getAuthorities().stream().map(a -> a.getAuthority()).toList();
-        // 3) Generar token JWT firmado con el username como subject y los roles como claims
         String token = jwtTokenService.generarToken(userDetails, roles);
-        // 4) Responder con el token (el cliente deberá enviarlo en el header Authorization)
         return ResponseEntity.ok(Map.of("token", token));
     }
 }

@@ -21,6 +21,9 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Controlador REST que expone operaciones CRUD y reportes para publicaciones.
+ */
 @RestController
 @RequestMapping("/api/publicaciones")
 @RequiredArgsConstructor
@@ -30,12 +33,14 @@ public class PublicacionController {
     private final PublicacionMapper publicacionMapper;
     private final UsuarioRepository usuarioRepository;
 
+    /**
+     * Crea una nueva publicación asociándola al usuario autenticado.
+     */
     @PostMapping
     public ResponseEntity<MostrarPublicacionDTO> crearPublicacion(
             @Valid @RequestBody CrearPublicacionDTO dto,
             @AuthenticationPrincipal User principal
     ) {
-        // Si no hay principal, Spring Security ya respondió 401/403 con tu EntryPoint/Handler
         String username = principal.getUsername();
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
@@ -46,18 +51,27 @@ public class PublicacionController {
         return ResponseEntity.created(location).body(body);
     }
 
+    /**
+     * Lista todas las publicaciones disponibles en el sistema.
+     */
     @GetMapping
     public ResponseEntity<List<MostrarPublicacionDTO>> listarTodas() {
         List<Publicacion> entidades = publicacionService.listarTodas();
         return ResponseEntity.ok(publicacionMapper.toDTOList(entidades));
     }
 
+    /**
+     * Recupera el detalle de una publicación por su identificador.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<MostrarPublicacionDTO> obtenerPorId(@PathVariable Long id) {
         Publicacion p = publicacionService.obtenerPorId(id);
         return ResponseEntity.ok(publicacionMapper.toDTO(p));
     }
 
+    /**
+     * Genera un reporte con publicaciones creadas en una fecha determinada.
+     */
     @GetMapping("/reporte")
     public ResponseEntity<ReportePublicacionesDTO> reportePorFecha(
             @RequestParam("fecha") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
@@ -74,6 +88,10 @@ public class PublicacionController {
         return ResponseEntity.ok(reporte);
     }
 
+    /**
+     * Obtiene todas las publicaciones pertenecientes a una persona usuaria
+     * específica.
+     */
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<MostrarPublicacionDTO>> obtenerPublicacionesPorUsuario(@PathVariable Long usuarioId) {
         List<Publicacion> publicaciones = publicacionService.obtenerPublicacionesPorUsuario(usuarioId);

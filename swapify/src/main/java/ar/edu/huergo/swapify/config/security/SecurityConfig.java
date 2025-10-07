@@ -23,45 +23,42 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ar.edu.huergo.swapify.repository.security.UsuarioRepository;
 
+/**
+ * Configura los componentes de seguridad de la aplicación combinando
+ * autenticación basada en JWT para el API y formularios protegidos para las
+ * vistas web.
+ */
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    /**
+     * Define la cadena de filtros con las reglas de autorización y la integración
+     * del filtro JWT.
+     */
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
-        // API stateless con JWT; vistas /web con sesiones para form login.
         http
             .csrf(csrf -> csrf.disable())
             .formLogin(form -> form.disable())
             .logout(logout -> logout.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(auth -> auth
-                // 1) Vistas Thymeleaf y recursos estáticos (públicos)
                 .requestMatchers("/", "/web/publicaciones", "/web/publicaciones/{id}", "/web/acerca",
                                  "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
-
-                // 2) Endpoints públicos del API
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/usuarios/registrar").permitAll()
-
-                // 3) Login processing
                 .requestMatchers("/login").permitAll()
                 .requestMatchers("/web/login").permitAll()
                 .requestMatchers("/web/registro").permitAll()
                 .requestMatchers(HttpMethod.POST, "/web/registro").permitAll()
-
-                // 4) Reglas del API protegidas por rol / autenticación
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/publicaciones").hasRole("CLIENTE")
                 .requestMatchers(HttpMethod.GET, "/api/publicaciones/reporte").hasRole("ADMIN")
                 .requestMatchers("/api/**").authenticated()
-
-                // 5) Web forms requieren autenticación
                 .requestMatchers("/web/publicaciones/nueva").authenticated()
                 .requestMatchers(HttpMethod.POST, "/web/publicaciones").authenticated()
-
-                // 6) Cualquier otra ruta
                 .anyRequest().permitAll()
             )
 
@@ -74,11 +71,18 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Proveedor de hashing para las credenciales persistidas.
+     */
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Genera una respuesta Problem Details estándar cuando la persona autenticada
+     * carece de permisos.
+     */
     @Bean
     AccessDeniedHandler accessDeniedHandler() {
         return (request, response, accessDeniedException) -> {
@@ -97,6 +101,10 @@ public class SecurityConfig {
         };
     }
 
+    /**
+     * Responde con Problem Details cuando la solicitud carece de credenciales
+     * válidas.
+     */
     @Bean
     AuthenticationEntryPoint authenticationEntryPoint() {
         return (request, response, authException) -> {
@@ -115,9 +123,12 @@ public class SecurityConfig {
         };
     }
 
+    /**
+     * Carga la información de usuarios desde la base de datos y la adapta a la
+     * interfaz que espera Spring Security.
+     */
     @Bean
     UserDetailsService userDetailsService(UsuarioRepository usuarioRepository) {
-        // Adaptamos nuestra entidad Usuario a UserDetails de Spring Security.
         return username -> usuarioRepository.findByUsername(username)
             .map(usuario -> org.springframework.security.core.userdetails.User
                 .withUsername(usuario.getUsername())
@@ -128,6 +139,10 @@ public class SecurityConfig {
             .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
     }
 
+    /**
+     * Configura el proveedor de autenticación DAO reutilizando el encoder y el
+     * servicio de usuarios.
+     */
     @Bean
     DaoAuthenticationProvider daoAuthenticationProvider(UserDetailsService userDetailsService,
                                                         PasswordEncoder passwordEncoder) {
@@ -136,6 +151,10 @@ public class SecurityConfig {
         return provider;
     }
 
+    /**
+     * Expone el {@link AuthenticationManager} construido por Spring para el uso
+     * de los controladores.
+     */
     @Bean
     AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();

@@ -37,13 +37,17 @@ import com.fasterxml.jackson.core.exc.StreamConstraintsException;
  * - Usa {@link ProblemDetail} para describir el problema con status, title, detail y propiedades extra.
  * - Usa SLF4J vía Lombok (@Slf4j) para emitir logs con el nivel adecuado.
  */
-@Slf4j // Lombok: inyecta un logger SLF4J llamado 'log'
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final long MAX_JSON_STRING_LENGTH = 20_000_000L;
     private static final Pattern LENGTH_PATTERN = Pattern.compile("length \\((\\d+)\\)");
 
+    /**
+     * Genera una respuesta estandarizada para errores de validación en payloads
+     * con {@code @Valid}.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
@@ -55,22 +59,28 @@ public class GlobalExceptionHandler {
         problem.setDetail("Se encontraron errores de validación en el payload");
         problem.setProperty("errores", errors);
         problem.setType(URI.create("https://http.dev/problems/validation-error"));
-        // Log de advertencia con detalle de campos inválidos
         log.warn("Solicitud inválida: errores de validación {}", errors);
         return problem;
     }
 
+    /**
+     * Atiende violaciones de constraints declarativas devolviendo Problem
+     * Details con información de la regla incumplida.
+     */
     @ExceptionHandler(ConstraintViolationException.class)
     public ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problem.setTitle("Violación de constraint");
         problem.setDetail(ex.getMessage());
         problem.setType(URI.create("https://http.dev/problems/constraint-violation"));
-        // Log de advertencia con el detalle de la violación
         log.warn("Violación de constraint: {}", ex.getMessage());
         return problem;
     }
 
+    /**
+     * Responde ante cuerpos de solicitud ilegibles diferenciando los casos de
+     * imágenes demasiado grandes.
+     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
         Throwable cause = ex.getCause();
@@ -100,28 +110,37 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /**
+     * Devuelve un Problem Details 404 cuando el recurso solicitado no existe.
+     */
     @ExceptionHandler(EntityNotFoundException.class)
     public ProblemDetail handleEntityNotFound(EntityNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problem.setTitle("Recurso no encontrado");
         problem.setDetail(ex.getMessage());
         problem.setType(URI.create("https://http.dev/problems/not-found"));
-        // Log informativo: recurso solicitado no existe
         log.info("Recurso no encontrado: {}", ex.getMessage());
         return problem;
     }
 
+    /**
+     * Maneja cualquier excepción no prevista para evitar exponer detalles del
+     * servidor.
+     */
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneric(Exception ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         problem.setTitle("Error interno del servidor");
         problem.setDetail("Ha ocurrido un error inesperado");
         problem.setType(URI.create("https://http.dev/problems/internal-error"));
-        // Log de error con stacktrace para diagnóstico
         log.error("Error no controlado", ex);
         return problem;
     }
 
+    /**
+     * Responde con un 400 cuando se detectan argumentos inválidos en la lógica
+     * de negocio.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgumentException(IllegalArgumentException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
@@ -131,17 +150,23 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /**
+     * Devuelve un 401 cuando las credenciales proporcionadas son incorrectas.
+     */
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
         problem.setTitle("Credenciales inválidas");
         problem.setDetail("Las credenciales proporcionadas son incorrectas");
         problem.setType(URI.create("https://http.dev/problems/unauthorized"));
-        // Log de advertencia: credenciales incorrectas
         log.warn("Intento de acceso con credenciales inválidas: {}", ex.getMessage());
         return problem;
     }
 
+    /**
+     * Envía un 403 cuando la persona autenticada intenta acceder a recursos sin
+     * permisos suficientes.
+     */
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
@@ -152,6 +177,9 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /**
+     * Informa sobre parámetros faltantes en solicitudes HTTP.
+     */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ProblemDetail handleMissingRequestParam(MissingServletRequestParameterException ex) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
@@ -167,6 +195,12 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
+    /**
+     * Obtiene la longitud reportada en el mensaje de error del parser JSON.
+     *
+     * @param mensaje detalle textual de la excepción.
+     * @return longitud extraída o {@code -1} si no se pudo determinar.
+     */
     private long extraerLongitud(String mensaje) {
         if (mensaje == null) {
             return -1L;

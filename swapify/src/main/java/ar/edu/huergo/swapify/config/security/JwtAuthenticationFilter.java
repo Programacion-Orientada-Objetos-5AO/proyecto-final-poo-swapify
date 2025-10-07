@@ -17,6 +17,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Filtro que integra autenticación basada en JWT al contexto de Spring Security
+ * resolviendo el token tanto del header como de la cookie de sesión.
+ */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -24,19 +28,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenService jwtTokenService;
     private final UserDetailsService userDetailsService;
 
+    /**
+     * Resuelve el token JWT presente en el request y construye la autenticación
+     * del contexto de seguridad cuando el token es válido.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
         String token = null;
 
-        // Primero, intenta obtener el token del header Authorization
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
         }
 
-        // Si no hay token en header, intenta obtenerlo de la cookie
         if (token == null) {
             jakarta.servlet.http.Cookie[] cookies = request.getCookies();
             if (cookies != null) {
@@ -49,7 +55,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // Si hay token, autentica
         if (token != null) {
             try {
                 String username = jwtTokenService.extraerUsername(token);

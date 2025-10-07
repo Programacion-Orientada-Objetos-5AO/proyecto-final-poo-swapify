@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import ar.edu.huergo.swapify.dto.security.RegistrarDTO;
 import ar.edu.huergo.swapify.entity.security.Usuario;
 import ar.edu.huergo.swapify.service.security.JwtTokenService;
 import ar.edu.huergo.swapify.service.security.UsuarioService;
@@ -34,8 +33,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Controlador web (Thymeleaf) para vistas de autenticación
- * Sirve páginas HTML para login y registro
+ * Controlador web encargado del flujo de autenticación y registro en las
+ * vistas Thymeleaf.
  */
 @Controller
 @RequestMapping("/web")
@@ -47,40 +46,44 @@ public class AuthWebController {
     private final JwtTokenService jwtTokenService;
     private final UserDetailsService userDetailsService;
 
-    /** Página de login */
+    /** Duración en segundos del token persistido en la cookie del navegador. */
+    private static final int COOKIE_MAX_AGE_SECONDS = 86400;
+
+    /**
+     * Renderiza el formulario de inicio de sesión.
+     */
     @GetMapping("/login")
     public String login(Model model) {
         model.addAttribute("titulo", "Iniciar sesión");
         return "auth/login";
     }
 
-    /** Página de registro */
+    /**
+     * Muestra el formulario para crear una nueva cuenta.
+     */
     @GetMapping("/registro")
     public String registro(Model model) {
         model.addAttribute("titulo", "Crear cuenta");
         return "auth/registro";
     }
 
-    /** Procesar registro desde formulario */
+    /**
+     * Procesa la creación de una cuenta desde el formulario web.
+     */
     @PostMapping("/registro")
     public String registrar(@RequestParam String username,
                            @RequestParam String password,
                            @RequestParam String verificacionPassword,
                            RedirectAttributes ra) {
         try {
-            // Crear DTO para validación
-            RegistrarDTO registrarDTO = new RegistrarDTO(username, password, verificacionPassword);
-
-            // Validar manualmente (ya que no usamos @Valid aquí)
             if (!password.equals(verificacionPassword)) {
                 ra.addFlashAttribute("error", "Las contraseñas no coinciden");
                 return "redirect:/web/registro";
             }
 
-            // Registrar usuario
             Usuario usuario = new Usuario();
             usuario.setUsername(username);
-            Usuario nuevoUsuario = usuarioService.registrar(usuario, password, verificacionPassword);
+            usuarioService.registrar(usuario, password, verificacionPassword);
 
             ra.addFlashAttribute("success", "Cuenta creada exitosamente. Ahora puedes iniciar sesión.");
             return "redirect:/web/login";
@@ -90,7 +93,10 @@ public class AuthWebController {
         }
     }
 
-    /** Procesar login desde AJAX y devolver token */
+    /**
+     * Autentica desde el formulario tradicional y persiste el token en una
+     * cookie para el uso posterior en las vistas.
+     */
     @PostMapping(value = "/login", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.TEXT_HTML_VALUE)
     public String loginDesdeFormulario(@RequestParam String username,
                                        @RequestParam String password,
@@ -103,7 +109,7 @@ public class AuthWebController {
 
             String token = jwtTokenService.generarToken(userDetails, roles);
             Cookie cookie = new Cookie("jwtToken", token);
-            cookie.setMaxAge(86400); // 1 día
+            cookie.setMaxAge(COOKIE_MAX_AGE_SECONDS);
             cookie.setPath("/");
             cookie.setHttpOnly(true);
             response.addCookie(cookie);
@@ -116,28 +122,28 @@ public class AuthWebController {
         }
     }
 
+    /**
+     * Autentica desde solicitudes AJAX devolviendo el token firmado en el cuerpo
+     * de la respuesta y mediante cookie.
+     */
     @PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Map<String, String>> loginAjax(@RequestParam String username, @RequestParam String password) {
         try {
-            // 1) Autenticar credenciales
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password));
 
-            // 2) Cargar UserDetails y roles
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             List<String> roles = userDetails.getAuthorities().stream().map(a -> a.getAuthority()).toList();
 
-            // 3) Generar token JWT
             String token = jwtTokenService.generarToken(userDetails, roles);
 
             ResponseCookie cookie = ResponseCookie.from("jwtToken", token)
                 .path("/")
-                .maxAge(Duration.ofDays(1))
+                .maxAge(Duration.ofSeconds(COOKIE_MAX_AGE_SECONDS))
                 .httpOnly(true)
                 .build();
 
-            // 4) Responder con el token
             return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(Map.of("token", token));
@@ -146,6 +152,9 @@ public class AuthWebController {
         }
     }
 
+    /**
+     * Elimina el token del cliente y limpia el contexto de seguridad.
+     */
     @PostMapping("/logout")
     public String logout(HttpServletRequest request,
                          HttpServletResponse response,

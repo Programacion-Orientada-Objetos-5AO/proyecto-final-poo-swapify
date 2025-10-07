@@ -32,6 +32,9 @@ import ar.edu.huergo.swapify.repository.publicacion.PublicacionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Lógica de negocio para gestionar publicaciones y su contenido multimedia.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -44,6 +47,10 @@ public class PublicacionService {
     private final PublicacionMapper publicacionMapper;
     private final ar.edu.huergo.swapify.repository.security.UsuarioRepository usuarioRepository;
 
+    /**
+     * Crea una publicación tomando los datos del DTO y asociándola al usuario
+     * autenticado.
+     */
     @Transactional
     public Publicacion crearPublicacion(CrearPublicacionDTO dto, ar.edu.huergo.swapify.entity.security.Usuario usuario) {
         if (dto == null) throw new IllegalArgumentException("Datos de publicación inválidos");
@@ -90,6 +97,9 @@ public class PublicacionService {
         return guardada;
     }
 
+    /**
+     * Devuelve todas las publicaciones ordenadas por fecha descendente.
+     */
     @Transactional(readOnly = true)
     public List<Publicacion> listarTodas() {
         List<Publicacion> publicaciones = publicacionRepository.findAllByOrderByFechaPublicacionDesc();
@@ -97,6 +107,10 @@ public class PublicacionService {
         return publicaciones;
     }
 
+    /**
+     * Obtiene una publicación por identificador asegurando que esté lista para
+     * ser mostrada.
+     */
     @Transactional(readOnly = true)
     public Publicacion obtenerPorId(Long id) {
         Publicacion publicacion = publicacionRepository.findById(id)
@@ -105,6 +119,9 @@ public class PublicacionService {
         return publicacion;
     }
 
+    /**
+     * Listado de publicaciones generadas durante una fecha específica.
+     */
     @Transactional(readOnly = true)
     public List<Publicacion> obtenerPublicacionesDeFecha(LocalDate fecha) {
         LocalDateTime inicio = fecha.atStartOfDay();
@@ -114,6 +131,10 @@ public class PublicacionService {
         return publicaciones;
     }
 
+    /**
+     * Calcula la suma de precios referenciales de las publicaciones creadas en
+     * una fecha.
+     */
     @Transactional(readOnly = true)
     public BigDecimal sumaPreciosEnFecha(LocalDate fecha) {
         LocalDateTime inicio = fecha.atStartOfDay();
@@ -122,6 +143,9 @@ public class PublicacionService {
         return (suma != null) ? suma : BigDecimal.ZERO;
     }
 
+    /**
+     * Recupera las publicaciones pertenecientes a un usuario específico.
+     */
     @Transactional(readOnly = true)
     public List<Publicacion> obtenerPublicacionesPorUsuario(Long usuarioId) {
         List<Publicacion> publicaciones = publicacionRepository.findByUsuarioId(usuarioId);
@@ -129,6 +153,9 @@ public class PublicacionService {
         return publicaciones;
     }
 
+    /**
+     * Lista las publicaciones del usuario autenticado ordenadas por fecha.
+     */
     @Transactional(readOnly = true)
     public List<Publicacion> listarPorUsuario(String username) {
         if (username == null || username.isBlank()) {
@@ -139,6 +166,9 @@ public class PublicacionService {
         return publicaciones;
     }
 
+    /**
+     * Elimina una publicación validando que pertenezca al usuario indicado.
+     */
     @Transactional
     public void eliminarPublicacion(Long publicacionId, String username) {
         Publicacion publicacion = publicacionRepository.findById(publicacionId)
@@ -152,6 +182,10 @@ public class PublicacionService {
         publicacionRepository.delete(publicacion);
     }
 
+    /**
+     * Procesa y almacena la imagen asociada a una publicación aplicando
+     * validaciones y optimizaciones.
+     */
     private void guardarImagen(Publicacion publicacion, byte[] bytes, String contentType) {
         if (bytes == null || bytes.length == 0) {
             publicacion.limpiarImagen();
@@ -193,20 +227,21 @@ public class PublicacionService {
         }
     }
 
+    /**
+     * Completa los datos derivados de una publicación para ser mostrados en
+     * vistas o respuestas.
+     */
     private void prepararPublicacionParaLectura(Publicacion publicacion) {
         if (publicacion == null) {
             return;
         }
 
         if (publicacion.getUsuario() != null) {
-            // Forzamos la inicialización de los datos básicos del usuario
             publicacion.getUsuario().getUsername();
         }
 
         byte[] imagen = publicacion.getImagen();
         if (imagen != null && imagen.length > 0) {
-            // getImagen realiza una copia defensiva; volvemos a setearla para
-            // asegurarnos de contar con un array independiente de la sesión JPA.
             publicacion.setImagen(imagen);
 
             String base64 = java.util.Base64.getEncoder().encodeToString(imagen);
@@ -224,6 +259,10 @@ public class PublicacionService {
         }
     }
 
+    /**
+     * Decodifica una cadena Base64 aceptando variantes con espacios o saltos de
+     * línea.
+     */
     private byte[] decodificarBase64(String base64Data) {
         if (base64Data == null) {
             return new byte[0];
@@ -248,6 +287,9 @@ public class PublicacionService {
         return Base64.getMimeDecoder().decode(limpio.toString());
     }
 
+    /**
+     * Normaliza el content type recibido a valores aceptados por el backend.
+     */
     private String normalizarContentType(String contentType) {
         if (contentType == null || contentType.isBlank()) {
             return "image/jpeg";
@@ -258,6 +300,10 @@ public class PublicacionService {
         return contentType.toLowerCase();
     }
 
+    /**
+     * Aplica escalado y compresión para mantener el tamaño de la imagen dentro
+     * de los límites permitidos.
+     */
     private ImagenProcesada optimizarImagen(byte[] data, String contentType, BufferedImage original) throws IOException {
         if (data == null || data.length == 0) {
             return new ImagenProcesada(data, normalizarContentType(contentType));
@@ -280,6 +326,9 @@ public class PublicacionService {
         return new ImagenProcesada(procesada, normalizarContentType(contentType));
     }
 
+    /**
+     * Escala la imagen cuando supera las dimensiones máximas permitidas.
+     */
     private EscaladoResult escalarSiEsNecesario(BufferedImage original, String contentType) throws IOException {
         int width = original.getWidth();
         int height = original.getHeight();

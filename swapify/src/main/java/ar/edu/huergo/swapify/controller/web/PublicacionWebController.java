@@ -27,8 +27,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
- * Controlador web (Thymeleaf) para vistas de publicaciones
- * Sirve páginas HTML (no JSON)
+ * Controlador web responsable de renderizar y gestionar las vistas de
+ * publicaciones de la plataforma.
  */
 @Controller
 @RequestMapping("/web")
@@ -39,7 +39,9 @@ public class PublicacionWebController {
     private final PublicacionService publicacionService;
     private final OfertaService ofertaService;
 
-    /** Home → lista de publicaciones */
+    /**
+     * Muestra la página principal con el listado público de publicaciones.
+     */
     @GetMapping({"", "/"})
     public String home(Model model) {
         List<Publicacion> publicaciones = publicacionService.listarTodas();
@@ -50,7 +52,10 @@ public class PublicacionWebController {
         return "publicaciones/lista";
     }
 
-    /** Lista */
+    /**
+     * Lista todas las publicaciones disponibles de manera equivalente a la
+     * página de inicio.
+     */
     @GetMapping("/publicaciones")
     public String listar(Model model) {
         List<Publicacion> publicaciones = publicacionService.listarTodas();
@@ -61,6 +66,9 @@ public class PublicacionWebController {
         return "publicaciones/lista";
     }
 
+    /**
+     * Lista únicamente las publicaciones pertenecientes al usuario autenticado.
+     */
     @GetMapping("/publicaciones/mias")
     public String listarPropias(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -89,7 +97,10 @@ public class PublicacionWebController {
         return "publicaciones/lista";
     }
 
-    /** Detalle de una publicación */
+    /**
+     * Visualiza el detalle de una publicación específica junto con sus ofertas
+     * y acciones disponibles según el usuario autenticado.
+     */
     @GetMapping("/publicaciones/{id}")
     public String ver(@PathVariable Long id, Model model, RedirectAttributes ra) {
         try {
@@ -115,6 +126,9 @@ public class PublicacionWebController {
         }
     }
 
+    /**
+     * Panel para que la persona propietaria gestione las ofertas recibidas.
+     */
     @GetMapping("/publicaciones/{id}/ofertas")
     public String administrarOfertas(@PathVariable Long id, Model model, RedirectAttributes ra) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -152,7 +166,9 @@ public class PublicacionWebController {
         }
     }
 
-    /** Formulario de alta */
+    /**
+     * Muestra el formulario para crear una nueva publicación.
+     */
     @GetMapping("/publicaciones/nueva")
     public String formNueva(Model model) {
         if (!model.containsAttribute("publicacion")) {
@@ -162,7 +178,10 @@ public class PublicacionWebController {
         return "publicaciones/formulario";
     }
 
-    /** Procesar alta usando el usuario autenticado */
+    /**
+     * Procesa el envío del formulario de creación utilizando el usuario
+     * autenticado como propietario.
+     */
     @PostMapping("/publicaciones")
     public String crear(@Valid @ModelAttribute("publicacion") CrearPublicacionDTO dto,
                         BindingResult result,
@@ -175,12 +194,9 @@ public class PublicacionWebController {
         }
 
         try {
-            // Tomamos el username del contexto de seguridad
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String username = (auth != null) ? auth.getName() : null;
 
-            // Creamos un Usuario “shell” con solo el username:
-            // el Service se encarga de buscar el managed user y setearlo en la entidad.
             Usuario u = new Usuario();
             u.setUsername(username);
 
@@ -193,6 +209,9 @@ public class PublicacionWebController {
         }
     }
 
+    /**
+     * Registra una nueva oferta para la publicación indicada.
+     */
     @PostMapping("/publicaciones/{id}/ofertas")
     public String ofertar(@PathVariable Long id,
                           @Valid @ModelAttribute("nuevaOferta") CrearOfertaDTO dto,
@@ -222,6 +241,10 @@ public class PublicacionWebController {
         return "redirect:/web/publicaciones/" + id;
     }
 
+    /**
+     * Marca una oferta como aceptada y opcionalmente redirige al panel de
+     * gestión.
+     */
     @PostMapping("/publicaciones/{publicacionId}/ofertas/{ofertaId}/aceptar")
     public String aceptarOferta(@PathVariable Long publicacionId,
                                 @PathVariable Long ofertaId,
@@ -248,6 +271,9 @@ public class PublicacionWebController {
         return redireccionarGestionOfertas(publicacionId, redirect);
     }
 
+    /**
+     * Marca una oferta como rechazada y devuelve la redirección apropiada.
+     */
     @PostMapping("/publicaciones/{publicacionId}/ofertas/{ofertaId}/rechazar")
     public String rechazarOferta(@PathVariable Long publicacionId,
                                  @PathVariable Long ofertaId,
@@ -274,6 +300,13 @@ public class PublicacionWebController {
         return redireccionarGestionOfertas(publicacionId, redirect);
     }
 
+    /**
+     * Determina la URL de retorno luego de gestionar una oferta.
+     *
+     * @param publicacionId identificador de la publicación.
+     * @param redirect parámetro opcional que define un destino alternativo.
+     * @return cadena con la ruta de redirección.
+     */
     private String redireccionarGestionOfertas(Long publicacionId, String redirect) {
         if (redirect != null && redirect.equalsIgnoreCase("panel")) {
             return "redirect:/web/publicaciones/" + publicacionId + "/ofertas";
@@ -281,6 +314,9 @@ public class PublicacionWebController {
         return "redirect:/web/publicaciones/" + publicacionId;
     }
 
+    /**
+     * Elimina una publicación del usuario autenticado.
+     */
     @PostMapping("/publicaciones/{id}/eliminar")
     public String eliminar(@PathVariable Long id, RedirectAttributes ra) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -302,7 +338,9 @@ public class PublicacionWebController {
         return "redirect:/web/publicaciones/mias";
     }
 
-    /** Página simple “Acerca” (opcional) */
+    /**
+     * Muestra la página informativa de la aplicación.
+     */
     @GetMapping("/acerca")
     public String acerca(Model model) {
         model.addAttribute("titulo", "Acerca de Swapify");

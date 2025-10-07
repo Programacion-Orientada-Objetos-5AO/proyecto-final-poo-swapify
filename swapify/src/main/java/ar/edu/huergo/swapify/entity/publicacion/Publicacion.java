@@ -14,6 +14,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+/**
+ * Entidad que representa una publicación intercambiable junto con su autor,
+ * precio, descripción y metadatos de imagen.
+ */
 @Entity
 @Table(name = "Publicacion")
 @Data
@@ -45,7 +49,10 @@ public class Publicacion {
     @Column(name = "fecha_publicacion", nullable = false, updatable = false)
     private LocalDateTime fechaPublicacion;
 
-    // EAGER para evitar LazyInitializationException al mapear a DTO fuera de la sesión
+    /**
+     * Usuario propietario de la publicación. Se carga ansiosamente para evitar
+     * problemas de inicialización diferida al mapear la entidad.
+     */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "usuario_id", nullable = false)
     @NotNull(message = "El usuario es obligatorio")
@@ -64,6 +71,9 @@ public class Publicacion {
     @Transient
     private String imagenDataUri;
 
+    /**
+     * Inicializa la fecha de publicación cuando aún no fue definida.
+     */
     @PrePersist
     public void prePersist() {
         if (this.fechaPublicacion == null) {
@@ -71,10 +81,18 @@ public class Publicacion {
         }
     }
 
+    /**
+     * Indica si la publicación posee una imagen persistida.
+     *
+     * @return {@code true} cuando existe contenido binario asociado.
+     */
     public boolean tieneImagen() {
         return imagen != null && imagen.length > 0;
     }
 
+    /**
+     * Elimina cualquier representación de imagen vinculada a la publicación.
+     */
     public void limpiarImagen() {
         this.imagen = null;
         this.imagenContentType = null;
@@ -82,10 +100,22 @@ public class Publicacion {
         this.imagenDataUri = null;
     }
 
+    /**
+     * Obtiene una copia defensiva del contenido de imagen para evitar escapes de
+     * referencias mutables.
+     *
+     * @return copia del arreglo de bytes o {@code null} si no hay imagen.
+     */
     public byte[] getImagen() {
         return imagen != null ? Arrays.copyOf(imagen, imagen.length) : null;
     }
 
+    /**
+     * Define el contenido de imagen almacenando una copia independiente del
+     * arreglo recibido.
+     *
+     * @param imagen datos binarios a asociar con la publicación.
+     */
     public void setImagen(byte[] imagen) {
         this.imagen = (imagen != null) ? Arrays.copyOf(imagen, imagen.length) : null;
     }
