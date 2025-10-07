@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -138,6 +139,16 @@ public class GlobalExceptionHandler {
         problem.setType(URI.create("https://http.dev/problems/unauthorized"));
         // Log de advertencia: credenciales incorrectas
         log.warn("Intento de acceso con credenciales inválidas: {}", ex.getMessage());
+        return problem;
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+        problem.setTitle("Acceso denegado");
+        problem.setDetail(ex.getMessage());
+        problem.setType(URI.create("https://http.dev/problems/forbidden"));
+        log.warn("Acceso denegado: {}", ex.getMessage());
         return problem;
     }
 

@@ -64,7 +64,16 @@
               </div>
             </div>
             <div class="detail-actions">
-              <a class="btn btn-primary btn-icon" href="#ofertas"><i class="bi bi-chat-text"></i> Ver ofertas</a>
+              <a class="btn btn-primary btn-icon"
+                 th:if="${esPropietario}"
+                 th:href="@{/web/publicaciones/{id}/ofertas(id=${publicacion.id})}">
+                <i class="bi bi-chat-text"></i> Gestionar ofertas
+              </a>
+              <a class="btn btn-primary btn-icon"
+                 th:if="${!esPropietario}"
+                 href="#ofertas">
+                <i class="bi bi-chat-text"></i> Ver ofertas
+              </a>
               <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones/nueva}" sec:authorize="isAuthenticated()">
                 <i class="bi bi-plus-circle"></i> Publicar algo similar
               </a>
@@ -114,14 +123,35 @@
 
             <div class="offer-timeline" th:if="${!#lists.isEmpty(ofertas)}">
               <div class="offer-card" th:each="oferta : ${ofertas}">
-                <div class="d-flex justify-content-between flex-wrap gap-2">
+                <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
                   <div>
                     <p class="fw-semibold mb-1" th:text="${oferta.usuario != null ? oferta.usuario.username : 'Usuario Swapify'}">usuario</p>
-                    <p class="mb-0 text-body-secondary" th:text="${#temporals.format(oferta.fechaOferta,'dd/MM/yyyy HH:mm')}">fecha</p>
+                    <p class="mb-0 text-body-secondary"
+                       th:text="${oferta.fechaOferta != null ? #temporals.format(oferta.fechaOferta,'dd/MM/yyyy HH:mm') : 'Fecha no disponible'}">fecha</p>
                   </div>
-                  <span class="badge text-bg-light text-dark" th:if="${oferta.propuestaObjeto != null && !oferta.propuestaObjeto.isBlank()}" th:text="${oferta.propuestaObjeto}">Objeto</span>
+                  <div class="d-flex flex-column align-items-end gap-2">
+                    <span class="badge text-bg-light text-dark" th:if="${oferta.propuestaObjeto != null && !oferta.propuestaObjeto.isBlank()}" th:text="${oferta.propuestaObjeto}">Objeto</span>
+                    <span class="badge fw-semibold"
+                          th:classappend="${oferta.estado == estadoAceptada} ? ' text-bg-success' : (oferta.estado == estadoRechazada ? ' text-bg-danger' : ' text-bg-warning text-dark')}"
+                          th:text="${oferta.estado == estadoAceptada ? 'Aceptada' : (oferta.estado == estadoRechazada ? 'Rechazada' : 'Pendiente')}"
+                    >Pendiente</span>
+                  </div>
                 </div>
                 <p class="mt-3 mb-0" th:text="${oferta.mensaje}">Mensaje</p>
+                <div class="mt-3" th:if="${oferta.estado == estadoAceptada && oferta.fechaRespuesta != null}">
+                  <small class="text-success-emphasis d-block">Confirmada el <span th:text="${#temporals.format(oferta.fechaRespuesta,'dd/MM/yyyy HH:mm')}">fecha</span></small>
+                </div>
+                <div class="mt-3" th:if="${oferta.estado == estadoRechazada && oferta.fechaRespuesta != null}">
+                  <small class="text-danger-emphasis d-block">Rechazada el <span th:text="${#temporals.format(oferta.fechaRespuesta,'dd/MM/yyyy HH:mm')}">fecha</span></small>
+                </div>
+                <div class="mt-3 d-flex gap-2 flex-wrap" th:if="${esPropietario && oferta.estado == estadoPendiente}">
+                  <form th:action="@{/web/publicaciones/{publicacionId}/ofertas/{ofertaId}/aceptar(publicacionId=${publicacion.id}, ofertaId=${oferta.id})}" method="post">
+                    <button type="submit" class="btn btn-success btn-sm btn-icon"><i class="bi bi-check-circle"></i> Aceptar</button>
+                  </form>
+                  <form th:action="@{/web/publicaciones/{publicacionId}/ofertas/{ofertaId}/rechazar(publicacionId=${publicacion.id}, ofertaId=${oferta.id})}" method="post">
+                    <button type="submit" class="btn btn-outline-danger btn-sm btn-icon"><i class="bi bi-x-circle"></i> Rechazar</button>
+                  </form>
+                </div>
               </div>
             </div>
           </div>

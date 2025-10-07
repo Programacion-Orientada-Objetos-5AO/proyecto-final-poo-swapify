@@ -40,10 +40,32 @@ public class Oferta {
     @Column(name = "fecha_oferta", nullable = false)
     private LocalDateTime fechaOferta;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false, length = 20)
+    private EstadoOferta estado = EstadoOferta.PENDIENTE;
+
+    @Column(name = "fecha_respuesta")
+    private LocalDateTime fechaRespuesta;
+
     @PrePersist
     public void prePersist() {
         if (fechaOferta == null) {
             fechaOferta = LocalDateTime.now();
         }
+        if (estado == null) {
+            estado = EstadoOferta.PENDIENTE;
+        }
+    }
+
+    public boolean estaPendiente() {
+        return EstadoOferta.PENDIENTE.equals(estado);
+    }
+
+    public boolean estaAceptada() {
+        return EstadoOferta.ACEPTADA.equals(estado);
+    }
+
+    public boolean estaRechazada() {
+        return EstadoOferta.RECHAZADA.equals(estado);
     }
 }
