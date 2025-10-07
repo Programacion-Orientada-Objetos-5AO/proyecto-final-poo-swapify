@@ -14,4 +14,6 @@ public interface OfertaRepository extends JpaRepository<Oferta, Long> {
     Optional<Oferta> findByIdAndPublicacionId(Long id, Long publicacionId);
 
     List<Oferta> findByPublicacionIdAndIdNot(Long publicacionId, Long ofertaId);
+
+    boolean existsByPublicacionIdAndUsuarioUsernameIgnoreCase(Long publicacionId, String username);
 }

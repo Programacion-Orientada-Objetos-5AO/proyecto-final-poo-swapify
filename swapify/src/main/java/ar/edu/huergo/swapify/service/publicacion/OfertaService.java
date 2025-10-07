@@ -31,10 +31,26 @@ public class OfertaService {
         if (dto == null) {
             throw new IllegalArgumentException("Datos de oferta inválidos");
         }
+        if (username == null || username.isBlank()) {
+            throw new AccessDeniedException("Necesitás iniciar sesión para ofertar");
+        }
+
         Publicacion publicacion = publicacionRepository.findById(publicacionId)
                 .orElseThrow(() -> new EntityNotFoundException("Publicación no encontrada"));
-        Usuario usuario = usuarioRepository.findByUsername(username)
+
+        Usuario usuario = usuarioRepository.findByUsernameIgnoreCase(username.trim())
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+
+        if (publicacion.getUsuario() != null && publicacion.getUsuario().getUsername() != null
+                && publicacion.getUsuario().getUsername().equalsIgnoreCase(usuario.getUsername())) {
+            throw new IllegalStateException("No podés ofertar en tu propia publicación");
+        }
+
+        boolean yaOferto = ofertaRepository
+                .existsByPublicacionIdAndUsuarioUsernameIgnoreCase(publicacionId, usuario.getUsername());
+        if (yaOferto) {
+            throw new IllegalStateException("Ya enviaste una oferta para esta publicación");
+        }
 
         Oferta oferta = new Oferta();
         oferta.setPublicacion(publicacion);
@@ -42,6 +58,7 @@ public class OfertaService {
         oferta.setMensaje(dto.getMensaje());
         oferta.setPropuestaObjeto(dto.getPropuestaObjeto());
         oferta.setEstado(EstadoOferta.PENDIENTE);
+        oferta.setFechaOferta(LocalDateTime.now());
 
         return ofertaRepository.save(oferta);
     }
