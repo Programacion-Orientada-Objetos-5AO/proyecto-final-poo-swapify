@@ -18,6 +18,7 @@ import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
 import ar.edu.huergo.swapify.entity.publicacion.Oferta;
 import ar.edu.huergo.swapify.entity.security.Usuario;
 import ar.edu.huergo.swapify.entity.publicacion.EstadoOferta;
+import ar.edu.huergo.swapify.entity.publicacion.EstadoPublicacion;
 import ar.edu.huergo.swapify.service.publicacion.PublicacionService;
 import ar.edu.huergo.swapify.service.publicacion.OfertaService;
 import jakarta.persistence.EntityNotFoundException;
@@ -44,7 +45,7 @@ public class PublicacionWebController {
      */
     @GetMapping({"", "/"})
     public String home(Model model) {
-        List<Publicacion> publicaciones = publicacionService.listarTodas();
+        List<Publicacion> publicaciones = publicacionService.listarDisponibles();
         model.addAttribute("publicaciones", publicaciones);
         model.addAttribute("titulo", "Publicaciones");
         model.addAttribute("misPublicaciones", false);
@@ -58,7 +59,7 @@ public class PublicacionWebController {
      */
     @GetMapping("/publicaciones")
     public String listar(Model model) {
-        List<Publicacion> publicaciones = publicacionService.listarTodas();
+        List<Publicacion> publicaciones = publicacionService.listarDisponibles();
         model.addAttribute("publicaciones", publicaciones);
         model.addAttribute("titulo", "Publicaciones");
         model.addAttribute("misPublicaciones", false);
@@ -102,19 +103,35 @@ public class PublicacionWebController {
      * y acciones disponibles según el usuario autenticado.
      */
     @GetMapping("/publicaciones/{id}")
-    public String ver(@PathVariable Long id, Model model, RedirectAttributes ra) {
+    public String ver(@PathVariable("id") Long id, Model model, RedirectAttributes ra) {
         try {
             Publicacion p = publicacionService.obtenerPorId(id);
             model.addAttribute("publicacion", p);
-            model.addAttribute("ofertas", ofertaService.listarPorPublicacion(id));
+            List<Oferta> ofertas = ofertaService.listarPorPublicacion(id);
+            model.addAttribute("ofertas", ofertas);
             if (!model.containsAttribute("nuevaOferta")) {
                 model.addAttribute("nuevaOferta", new CrearOfertaDTO());
             }
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            boolean esPropietario = auth != null && !(auth instanceof AnonymousAuthenticationToken)
-                    && auth.isAuthenticated() && p.getUsuario() != null
+            boolean autenticado = auth != null && !(auth instanceof AnonymousAuthenticationToken)
+                    && auth.isAuthenticated();
+            boolean esAdmin = autenticado && auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+            boolean esPropietario = autenticado && p.getUsuario() != null
                     && auth.getName().equals(p.getUsuario().getUsername());
+            var ofertaAceptada = ofertaService.obtenerOfertaAceptada(id);
+            boolean esPostulanteAceptado = autenticado && ofertaAceptada.isPresent()
+                    && ofertaAceptada.get().getUsuario() != null
+                    && auth.getName().equals(ofertaAceptada.get().getUsuario().getUsername());
+            boolean puedeCoordinar = esPropietario || esPostulanteAceptado || esAdmin;
+            boolean puedeOfertar = p.estaActiva() && !esPropietario && !esAdmin;
             model.addAttribute("esPropietario", esPropietario);
+            model.addAttribute("esAdmin", esAdmin);
+            model.addAttribute("ofertaAceptada", ofertaAceptada.orElse(null));
+            model.addAttribute("esPostulanteAceptado", esPostulanteAceptado);
+            model.addAttribute("puedeCoordinar", puedeCoordinar);
+            model.addAttribute("puedeOfertar", puedeOfertar);
+            model.addAttribute("estadoPublicacion", p.getEstado());
             model.addAttribute("estadoAceptada", EstadoOferta.ACEPTADA);
             model.addAttribute("estadoPendiente", EstadoOferta.PENDIENTE);
             model.addAttribute("estadoRechazada", EstadoOferta.RECHAZADA);
@@ -130,7 +147,7 @@ public class PublicacionWebController {
      * Panel para que la persona propietaria gestione las ofertas recibidas.
      */
     @GetMapping("/publicaciones/{id}/ofertas")
-    public String administrarOfertas(@PathVariable Long id, Model model, RedirectAttributes ra) {
+    public String administrarOfertas(@PathVariable("id") Long id, Model model, RedirectAttributes ra) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
             ra.addFlashAttribute("error", "Necesitás iniciar sesión para gestionar las ofertas");
@@ -139,8 +156,12 @@ public class PublicacionWebController {
 
         try {
             Publicacion publicacion = publicacionService.obtenerPorId(id);
-            if (publicacion.getUsuario() == null || publicacion.getUsuario().getUsername() == null
-                    || !auth.getName().equals(publicacion.getUsuario().getUsername())) {
+            boolean esAdmin = auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+            boolean esPropietario = publicacion.getUsuario() != null
+                    && publicacion.getUsuario().getUsername() != null
+                    && auth.getName().equals(publicacion.getUsuario().getUsername());
+            if (!esPropietario && !esAdmin) {
                 ra.addFlashAttribute("error", "No tenés permiso para gestionar las ofertas de esta publicación");
                 return "redirect:/web/publicaciones/" + id;
             }
@@ -151,6 +172,8 @@ public class PublicacionWebController {
             model.addAttribute("estadoAceptada", EstadoOferta.ACEPTADA);
             model.addAttribute("estadoPendiente", EstadoOferta.PENDIENTE);
             model.addAttribute("estadoRechazada", EstadoOferta.RECHAZADA);
+            model.addAttribute("estadoPublicacion", publicacion.getEstado());
+            model.addAttribute("fechaReserva", publicacion.getFechaReserva());
             model.addAttribute("resumenOfertas", Map.of(
                     "total", Long.valueOf(ofertas.size()),
                     "pendientes", ofertas.stream().filter(Oferta::estaPendiente).count(),
@@ -158,7 +181,8 @@ public class PublicacionWebController {
                     "rechazadas", ofertas.stream().filter(Oferta::estaRechazada).count()
             ));
             model.addAttribute("titulo", "Ofertas de la publicación");
-            model.addAttribute("esPropietario", true);
+            model.addAttribute("esPropietario", esPropietario);
+            model.addAttribute("esAdmin", esAdmin);
             return "publicaciones/ofertas";
         } catch (EntityNotFoundException e) {
             ra.addFlashAttribute("error", "Publicación no encontrada");
@@ -171,10 +195,15 @@ public class PublicacionWebController {
      */
     @GetMapping("/publicaciones/nueva")
     public String formNueva(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean esAdmin = auth != null && !(auth instanceof AnonymousAuthenticationToken)
+                && auth.isAuthenticated()
+                && auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
         if (!model.containsAttribute("publicacion")) {
             model.addAttribute("publicacion", new CrearPublicacionDTO());
         }
         model.addAttribute("titulo", "Crear publicación");
+        model.addAttribute("esAdmin", esAdmin);
         return "publicaciones/formulario";
     }
 
@@ -213,7 +242,7 @@ public class PublicacionWebController {
      * Registra una nueva oferta para la publicación indicada.
      */
     @PostMapping("/publicaciones/{id}/ofertas")
-    public String ofertar(@PathVariable Long id,
+    public String ofertar(@PathVariable("id") Long id,
                           @Valid @ModelAttribute("nuevaOferta") CrearOfertaDTO dto,
                           BindingResult result,
                           RedirectAttributes ra) {
@@ -235,6 +264,8 @@ public class PublicacionWebController {
             ra.addFlashAttribute("successOferta", "¡Tu oferta fue enviada al propietario!");
         } catch (EntityNotFoundException e) {
             ra.addFlashAttribute("errorOferta", e.getMessage());
+        } catch (IllegalStateException e) {
+            ra.addFlashAttribute("errorOferta", e.getMessage());
         } catch (Exception e) {
             ra.addFlashAttribute("errorOferta", "No pudimos registrar tu oferta: " + e.getMessage());
         }
@@ -246,8 +277,8 @@ public class PublicacionWebController {
      * gestión.
      */
     @PostMapping("/publicaciones/{publicacionId}/ofertas/{ofertaId}/aceptar")
-    public String aceptarOferta(@PathVariable Long publicacionId,
-                                @PathVariable Long ofertaId,
+    public String aceptarOferta(@PathVariable("publicacionId") Long publicacionId,
+                                @PathVariable("ofertaId") Long ofertaId,
                                 @RequestParam(value = "redirect", required = false) String redirect,
                                 RedirectAttributes ra) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -257,7 +288,9 @@ public class PublicacionWebController {
         }
 
         try {
-            ofertaService.aceptarOferta(publicacionId, ofertaId, auth.getName());
+            boolean esAdmin = auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+            ofertaService.aceptarOferta(publicacionId, ofertaId, auth.getName(), esAdmin);
             ra.addFlashAttribute("successOferta", "¡Aceptaste la oferta seleccionada! Nos comunicaremos para coordinar el intercambio.");
         } catch (EntityNotFoundException e) {
             ra.addFlashAttribute("errorOferta", e.getMessage());
@@ -275,8 +308,8 @@ public class PublicacionWebController {
      * Marca una oferta como rechazada y devuelve la redirección apropiada.
      */
     @PostMapping("/publicaciones/{publicacionId}/ofertas/{ofertaId}/rechazar")
-    public String rechazarOferta(@PathVariable Long publicacionId,
-                                 @PathVariable Long ofertaId,
+    public String rechazarOferta(@PathVariable("publicacionId") Long publicacionId,
+                                 @PathVariable("ofertaId") Long ofertaId,
                                  @RequestParam(value = "redirect", required = false) String redirect,
                                  RedirectAttributes ra) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -286,7 +319,9 @@ public class PublicacionWebController {
         }
 
         try {
-            ofertaService.rechazarOferta(publicacionId, ofertaId, auth.getName());
+            boolean esAdmin = auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+            ofertaService.rechazarOferta(publicacionId, ofertaId, auth.getName(), esAdmin);
             ra.addFlashAttribute("successOferta", "La oferta fue rechazada correctamente.");
         } catch (EntityNotFoundException e) {
             ra.addFlashAttribute("errorOferta", e.getMessage());
@@ -314,11 +349,53 @@ public class PublicacionWebController {
         return "redirect:/web/publicaciones/" + publicacionId;
     }
 
+    @PostMapping("/publicaciones/{id}/estado")
+    public String actualizarEstado(@PathVariable("id") Long id,
+                                   @RequestParam("estado") EstadoPublicacion estado,
+                                   @RequestParam(value = "redirect", required = false) String redirect,
+                                   RedirectAttributes ra) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
+            ra.addFlashAttribute("error", "Necesitás iniciar sesión para actualizar la publicación");
+            return "redirect:/web/publicaciones/" + id;
+        }
+
+        boolean esAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+
+        try {
+            publicacionService.actualizarEstado(id, estado, auth.getName(), esAdmin);
+            String mensaje = switch (estado) {
+                case ACTIVA -> "La publicación se volvió a activar";
+                case EN_NEGOCIACION -> "Marcaste la publicación como reservada para coordinar el intercambio";
+                case PAUSADA -> "La publicación quedó pausada temporalmente";
+                case FINALIZADA -> "¡Felicitaciones! Registramos el intercambio como finalizado";
+            };
+            ra.addFlashAttribute("success", mensaje);
+        } catch (EntityNotFoundException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        } catch (org.springframework.security.access.AccessDeniedException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", "No pudimos actualizar el estado: " + e.getMessage());
+        }
+
+        if (redirect != null && redirect.equalsIgnoreCase("panel")) {
+            return "redirect:/web/publicaciones/" + id + "/ofertas";
+        }
+        if (redirect != null && redirect.equalsIgnoreCase("admin")) {
+            return "redirect:/web/admin";
+        }
+        return "redirect:/web/publicaciones/" + id;
+    }
+
     /**
      * Elimina una publicación del usuario autenticado.
      */
     @PostMapping("/publicaciones/{id}/eliminar")
-    public String eliminar(@PathVariable Long id, RedirectAttributes ra) {
+    public String eliminar(@PathVariable("id") Long id, RedirectAttributes ra) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
             ra.addFlashAttribute("error", "Necesitás iniciar sesión para eliminar una publicación");
@@ -326,7 +403,9 @@ public class PublicacionWebController {
         }
 
         try {
-            publicacionService.eliminarPublicacion(id, auth.getName());
+            boolean esAdmin = auth.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+            publicacionService.eliminarPublicacion(id, auth.getName(), esAdmin);
             ra.addFlashAttribute("success", "La publicación se eliminó correctamente");
         } catch (EntityNotFoundException e) {
             ra.addFlashAttribute("error", e.getMessage());

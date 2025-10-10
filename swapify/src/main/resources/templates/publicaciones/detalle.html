@@ -3,11 +3,28 @@
 <head><meta charset="UTF-8"><title>Detalle</title></head>
 <body>
 <div th:replace="~{base :: layout(${titulo} ?: 'Detalle', ~{::section})}">
-  <section class="detail-layout">
+  <section class="detail-layout" th:with="estado=${estadoPublicacion != null ? estadoPublicacion.name() : 'ACTIVA'}">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
       <div>
         <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones}"><i class="bi bi-arrow-left"></i> Volver al catálogo</a>
-        <h1 class="display-6 fw-bold mt-4 mb-1" th:text="${titulo} ?: 'Detalle de la publicación'">Detalle</h1>
+        <div class="d-flex align-items-center flex-wrap gap-3 mt-4">
+          <h1 class="display-6 fw-bold mb-1" th:text="${titulo} ?: 'Detalle de la publicación'">Detalle</h1>
+          <span class="badge-status"
+                th:classappend="${estado == 'ACTIVA'} ? ' badge-status--activa' :
+                               (${estado == 'EN_NEGOCIACION'} ? ' badge-status--negociacion' :
+                               (${estado == 'PAUSADA'} ? ' badge-status--pausada' : ' badge-status--finalizada'))">
+            <i class="bi"
+               th:class="${estado == 'ACTIVA'} ? 'bi-lightning-charge-fill' :
+                          (${estado == 'EN_NEGOCIACION'} ? 'bi-people-arrows' :
+                          (${estado == 'PAUSADA'} ? 'bi-pause-circle-fill' : 'bi-flag-fill'))"></i>
+            <span th:text="${estado == 'ACTIVA'} ? 'Disponible' :
+                              (${estado == 'EN_NEGOCIACION'} ? 'En negociación' :
+                              (${estado == 'PAUSADA'} ? 'Pausada' : 'Finalizada'))">Disponible</span>
+          </span>
+          <span class="badge badge-oficial" th:if="${publicacion.oficial}">
+            <i class="bi bi-patch-check-fill"></i> Swapify Oficial
+          </span>
+        </div>
         <p class="text-body-secondary mb-0">Revisá la información clave antes de confirmar tu propuesta de intercambio.</p>
       </div>
       <span class="badge-soft">ID #<span th:text="${publicacion.id}">1</span></span>
@@ -22,7 +39,9 @@
               <h2 class="h3 fw-semibold mb-2" th:text="${publicacion.nombre}">Nombre</h2>
               <p class="text-body-secondary mb-0" th:text="${publicacion.descripcion}">Descripción</p>
             </div>
-            <div class="publication-media" th:if="${publicacion.imagenDataUri != null}">
+            <div class="publication-media"
+                 th:if="${publicacion.imagenDataUri != null}"
+                 th:classappend="${estado == 'EN_NEGOCIACION'} ? ' reserved' : ''">
               <img class="publication-media__img"
                    th:src="${publicacion.imagenDataUri}"
                    th:alt="${'Imagen de ' + publicacion.nombre}">
@@ -52,16 +71,51 @@
                 <i class="bi bi-calendar-event"></i>
                 <div>
                   <p class="fw-semibold mb-1">Publicada el</p>
-                  <p class="mb-0 text-body-secondary" th:text="${#temporals.format(publicacion.fechaPublicacion,'dd/MM/yyyy HH:mm')}">Fecha</p>
+                  <p class="mb-0 text-body-secondary"
+                     th:text="${publicacion.fechaPublicacion != null ? #temporals.format(publicacion.fechaPublicacion,'dd/MM/yyyy HH:mm') : 'Sin fecha registrada'}">Fecha</p>
                 </div>
               </div>
               <div class="detail-meta-item">
                 <i class="bi bi-person-badge"></i>
                 <div>
                   <p class="fw-semibold mb-1">Publicado por</p>
-                  <p class="mb-0 text-body-secondary" th:text="${publicacion.usuario != null ? publicacion.usuario.username : publicacion.usuarioUsername}">Usuario</p>
+                  <p class="mb-0 text-body-secondary">
+                    <span th:text="${publicacion.oficial ? 'Swapify Oficial' : (publicacion.usuario != null ? publicacion.usuario.username : publicacion.usuarioUsername)}">Usuario</span>
+                    <span class="badge badge-oficial ms-2" th:if="${publicacion.oficial}">
+                      <i class="bi bi-shield-lock-fill"></i> Oficial
+                    </span>
+                  </p>
                 </div>
               </div>
+            </div>
+            <div class="coordination-card" th:if="${ofertaAceptada != null}">
+              <h3 class="h5 fw-semibold mb-2"><i class="bi bi-people-fill text-success me-2"></i>Intercambio en coordinación</h3>
+              <p class="mb-0" th:if="${puedeCoordinar}">
+                Ponete en contacto con
+                <strong th:text="${ofertaAceptada.usuario != null ? ofertaAceptada.usuario.username : 'la persona interesada'}">usuario</strong>
+                para acordar el punto de encuentro y los detalles del intercambio.
+              </p>
+              <div class="coordination-card__contacts" th:if="${puedeCoordinar}">
+                <a class="btn btn-success btn-icon"
+                   th:if="${ofertaAceptada.usuario != null}"
+                   th:href="${'mailto:' + ofertaAceptada.usuario.username}">
+                  <i class="bi bi-envelope-fill"></i> Escribir a <span th:text="${ofertaAceptada.usuario.username}">usuario</span>
+                </a>
+                <a class="btn btn-outline-light btn-icon"
+                   th:if="${publicacion.usuario != null}"
+                   th:href="${'mailto:' + publicacion.usuario.username}">
+                  <i class="bi bi-send"></i> Contactar a <span th:text="${publicacion.usuario.username}">propietario</span>
+                </a>
+              </div>
+              <p class="coordination-note mt-3" th:if="${!puedeCoordinar}">
+                Este intercambio está reservado mientras las partes coordinan los detalles. Podés explorar otras publicaciones disponibles.
+              </p>
+            </div>
+            <div class="alert alert-warning mt-2" th:if="${estado == 'PAUSADA'}">
+              <i class="bi bi-clock-history me-2"></i>El autor pausó temporalmente esta publicación. Volvé más tarde o revisá otras opciones.
+            </div>
+            <div class="alert alert-success mt-2" th:if="${estado == 'FINALIZADA'}">
+              <i class="bi bi-check-circle me-2"></i>Este intercambio ya fue concretado. Gracias por utilizar Swapify.
             </div>
             <div class="detail-actions">
               <a class="btn btn-primary btn-icon"
@@ -80,6 +134,36 @@
               <a class="btn btn-outline-secondary btn-icon" th:href="@{/web/registro}" sec:authorize="!isAuthenticated()">
                 <i class="bi bi-person-plus"></i> Registrate para proponer</a>
             </div>
+            <div class="detail-state-actions" th:if="${esPropietario or esAdmin}">
+              <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+                <input type="hidden" name="estado" value="EN_NEGOCIACION"/>
+                <button type="submit" class="btn btn-outline-primary btn-icon"
+                        th:disabled="${estado == 'EN_NEGOCIACION'}">
+                  <i class="bi bi-people"></i> Reservar publicación
+                </button>
+              </form>
+              <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+                <input type="hidden" name="estado" value="FINALIZADA"/>
+                <button type="submit" class="btn btn-success btn-icon"
+                        th:disabled="${estado == 'FINALIZADA'}">
+                  <i class="bi bi-check2-circle"></i> Marcar como finalizada
+                </button>
+              </form>
+              <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+                <input type="hidden" name="estado" value="ACTIVA"/>
+                <button type="submit" class="btn btn-outline-light btn-icon"
+                        th:disabled="${estado == 'ACTIVA'}">
+                  <i class="bi bi-arrow-counterclockwise"></i> Reabrir publicación
+                </button>
+              </form>
+              <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+                <input type="hidden" name="estado" value="PAUSADA"/>
+                <button type="submit" class="btn btn-outline-warning btn-icon text-warning"
+                        th:disabled="${estado == 'PAUSADA'}">
+                  <i class="bi bi-pause-circle"></i> Pausar
+                </button>
+              </form>
+            </div>
           </div>
         </div>
         <div id="ofertas" class="card mt-4 detail-offers">
@@ -94,7 +178,7 @@
             <div th:if="${successOferta != null}" class="alert alert-success" th:text="${successOferta}">Oferta enviada</div>
             <div th:if="${errorOferta != null}" class="alert alert-danger" th:text="${errorOferta}">Error</div>
 
-            <div class="offer-form" sec:authorize="isAuthenticated()">
+            <div class="offer-form" sec:authorize="isAuthenticated()" th:if="${puedeOfertar}">
               <h4 class="h6 fw-semibold mb-3">Proponer intercambio</h4>
               <form th:action="@{/web/publicaciones/{id}/ofertas(id=${publicacion.id})}" method="post" class="vstack gap-3" th:object="${nuevaOferta}">
                 <div>
@@ -110,6 +194,12 @@
                   <a class="btn btn-outline-secondary" th:href="@{/web/publicaciones/{id}(id=${publicacion.id})}">Limpiar</a>
                 </div>
               </form>
+            </div>
+            <div class="alert alert-warning" sec:authorize="isAuthenticated()" th:if="${!puedeOfertar}">
+              <i class="bi bi-exclamation-triangle me-2"></i>Esta publicación no acepta nuevas ofertas en este momento.
+              <span th:if="${estado == 'EN_NEGOCIACION'}">Ya hay un intercambio en marcha.</span>
+              <span th:if="${estado == 'FINALIZADA'}">El intercambio fue concretado.</span>
+              <span th:if="${estado == 'PAUSADA'}">El autor pausó la recepción de propuestas.</span>
             </div>
             <div class="alert alert-info" sec:authorize="!isAuthenticated()">
               <i class="bi bi-info-circle me-2"></i>Iniciá sesión para enviar tu oferta y continuar la conversación.

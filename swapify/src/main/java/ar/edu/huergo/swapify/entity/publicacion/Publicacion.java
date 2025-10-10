@@ -9,7 +9,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -22,7 +21,6 @@ import lombok.ToString;
 @Table(name = "Publicacion")
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 @ToString(exclude = {"usuario", "imagen", "imagenBase64", "imagenDataUri"})
 public class Publicacion {
 
@@ -58,6 +56,19 @@ public class Publicacion {
     @NotNull(message = "El usuario es obligatorio")
     private Usuario usuario;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false, length = 20)
+    private EstadoPublicacion estado = EstadoPublicacion.ACTIVA;
+
+    @Column(name = "es_oficial", nullable = false)
+    private boolean oficial;
+
+    @Column(name = "fecha_reserva")
+    private LocalDateTime fechaReserva;
+
+    @Column(name = "fecha_cierre")
+    private LocalDateTime fechaCierre;
+
     @Lob
     @Column(name = "imagen", columnDefinition = "LONGBLOB")
     private byte[] imagen;
@@ -71,6 +82,24 @@ public class Publicacion {
     @Transient
     private String imagenDataUri;
 
+    public Publicacion(Long id, String nombre, BigDecimal precio, String descripcion,
+            String objetoACambiar, LocalDateTime fechaPublicacion, Usuario usuario, byte[] imagen,
+            String imagenContentType, LocalDateTime fechaReserva, LocalDateTime fechaCierre) {
+        this.id = id;
+        this.nombre = nombre;
+        this.precio = precio;
+        this.descripcion = descripcion;
+        this.objetoACambiar = objetoACambiar;
+        this.fechaPublicacion = fechaPublicacion;
+        this.usuario = usuario;
+        this.estado = EstadoPublicacion.ACTIVA;
+        this.oficial = false;
+        this.fechaReserva = fechaReserva;
+        this.fechaCierre = fechaCierre;
+        setImagen(imagen);
+        this.imagenContentType = imagenContentType;
+    }
+
     /**
      * Inicializa la fecha de publicación cuando aún no fue definida.
      */
@@ -78,6 +107,9 @@ public class Publicacion {
     public void prePersist() {
         if (this.fechaPublicacion == null) {
             this.fechaPublicacion = LocalDateTime.now();
+        }
+        if (this.estado == null) {
+            this.estado = EstadoPublicacion.ACTIVA;
         }
     }
 
@@ -118,5 +150,38 @@ public class Publicacion {
      */
     public void setImagen(byte[] imagen) {
         this.imagen = (imagen != null) ? Arrays.copyOf(imagen, imagen.length) : null;
+    }
+
+    public boolean estaActiva() {
+        return estado != null && estado.admiteOfertas();
+    }
+
+    public boolean estaEnNegociacion() {
+        return estado != null && estado.estaReservada();
+    }
+
+    public boolean estaFinalizada() {
+        return EstadoPublicacion.FINALIZADA.equals(estado);
+    }
+
+    public void marcarEnNegociacion(LocalDateTime momento) {
+        this.estado = EstadoPublicacion.EN_NEGOCIACION;
+        this.fechaReserva = momento;
+        this.fechaCierre = null;
+    }
+
+    public void marcarFinalizada(LocalDateTime momento) {
+        this.estado = EstadoPublicacion.FINALIZADA;
+        this.fechaCierre = momento;
+    }
+
+    public void reactivar() {
+        this.estado = EstadoPublicacion.ACTIVA;
+        this.fechaReserva = null;
+        this.fechaCierre = null;
+    }
+
+    public void pausar() {
+        this.estado = EstadoPublicacion.PAUSADA;
     }
 }

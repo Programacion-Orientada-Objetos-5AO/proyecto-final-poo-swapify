@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Base64;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -26,9 +27,11 @@ import org.springframework.web.multipart.MultipartFile;
 import lombok.extern.slf4j.Slf4j;
 
 import ar.edu.huergo.swapify.dto.publicacion.CrearPublicacionDTO;
+import ar.edu.huergo.swapify.entity.publicacion.EstadoPublicacion;
 import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
 import ar.edu.huergo.swapify.mapper.publicacion.PublicacionMapper;
 import ar.edu.huergo.swapify.repository.publicacion.PublicacionRepository;
+import ar.edu.huergo.swapify.repository.publicacion.OfertaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -44,6 +47,7 @@ public class PublicacionService {
     private static final long MAX_IMAGE_BYTES = 5_000_000L;
 
     private final PublicacionRepository publicacionRepository;
+    private final OfertaRepository ofertaRepository;
     private final PublicacionMapper publicacionMapper;
     private final ar.edu.huergo.swapify.repository.security.UsuarioRepository usuarioRepository;
 
@@ -59,6 +63,8 @@ public class PublicacionService {
         Publicacion p = publicacionMapper.toEntity(dto);
         p.setUsuario(managedUsuario);
         p.setFechaPublicacion(LocalDateTime.now());
+        p.setEstado(EstadoPublicacion.ACTIVA);
+        p.setOficial(usuarioEsAdmin(managedUsuario));
 
         MultipartFile archivo = dto.getImagenArchivo();
         if (archivo != null && !archivo.isEmpty()) {
@@ -105,6 +111,23 @@ public class PublicacionService {
         List<Publicacion> publicaciones = publicacionRepository.findAllByOrderByFechaPublicacionDesc();
         publicaciones.forEach(this::prepararPublicacionParaLectura);
         return publicaciones;
+    }
+
+    /**
+     * Devuelve únicamente las publicaciones que continúan aceptando ofertas
+     * para su exhibición pública.
+     */
+    @Transactional(readOnly = true)
+    public List<Publicacion> listarDisponibles() {
+        return publicacionRepository.findAllByOrderByFechaPublicacionDesc().stream()
+                .peek(this::prepararPublicacionParaLectura)
+                .filter(publicacion -> {
+                    if (publicacion.getEstado() == null) {
+                        publicacion.setEstado(EstadoPublicacion.ACTIVA);
+                    }
+                    return publicacion.estaActiva();
+                })
+                .collect(Collectors.toList());
     }
 
     /**
@@ -170,16 +193,51 @@ public class PublicacionService {
      * Elimina una publicación validando que pertenezca al usuario indicado.
      */
     @Transactional
-    public void eliminarPublicacion(Long publicacionId, String username) {
+    public void eliminarPublicacion(Long publicacionId, String username, boolean esAdmin) {
         Publicacion publicacion = publicacionRepository.findById(publicacionId)
                 .orElseThrow(() -> new EntityNotFoundException("Publicación no encontrada"));
 
-        if (publicacion.getUsuario() == null || publicacion.getUsuario().getUsername() == null
-                || !publicacion.getUsuario().getUsername().equals(username)) {
+        if (!puedeGestionarPublicacion(publicacion, username, esAdmin)) {
             throw new AccessDeniedException("No tenés permiso para eliminar esta publicación");
         }
-
+        ofertaRepository.deleteByPublicacionId(publicacionId);
         publicacionRepository.delete(publicacion);
+    }
+
+    @Transactional
+    public Publicacion actualizarEstado(Long publicacionId, EstadoPublicacion nuevoEstado,
+                                        String username, boolean esAdmin) {
+        if (nuevoEstado == null) {
+            throw new IllegalArgumentException("Estado inválido");
+        }
+        Publicacion publicacion = publicacionRepository.findById(publicacionId)
+                .orElseThrow(() -> new EntityNotFoundException("Publicación no encontrada"));
+
+        if (!puedeGestionarPublicacion(publicacion, username, esAdmin)) {
+            throw new AccessDeniedException("No tenés permiso para actualizar esta publicación");
+        }
+
+        switch (nuevoEstado) {
+            case ACTIVA -> publicacion.reactivar();
+            case EN_NEGOCIACION -> publicacion.marcarEnNegociacion(LocalDateTime.now());
+            case FINALIZADA -> publicacion.marcarFinalizada(LocalDateTime.now());
+            case PAUSADA -> publicacion.pausar();
+        }
+
+        return publicacion;
+    }
+
+    @Transactional
+    public Publicacion actualizarOficialidad(Long publicacionId, boolean oficial, String username, boolean esAdmin) {
+        Publicacion publicacion = publicacionRepository.findById(publicacionId)
+                .orElseThrow(() -> new EntityNotFoundException("Publicación no encontrada"));
+
+        if (!esAdmin) {
+            throw new AccessDeniedException("Solo los administradores pueden modificar la oficialidad");
+        }
+
+        publicacion.setOficial(oficial);
+        return publicacion;
     }
 
     /**
@@ -234,6 +292,10 @@ public class PublicacionService {
     private void prepararPublicacionParaLectura(Publicacion publicacion) {
         if (publicacion == null) {
             return;
+        }
+
+        if (publicacion.getEstado() == null) {
+            publicacion.setEstado(EstadoPublicacion.ACTIVA);
         }
 
         if (publicacion.getUsuario() != null) {
@@ -469,5 +531,23 @@ public class PublicacionService {
         public BufferedImage imagen() {
             return imagen;
         }
+    }
+
+    private boolean puedeGestionarPublicacion(Publicacion publicacion, String username, boolean esAdmin) {
+        if (esAdmin) {
+            return true;
+        }
+        return publicacion.getUsuario() != null && publicacion.getUsuario().getUsername() != null
+                && publicacion.getUsuario().getUsername().equalsIgnoreCase(username);
+    }
+
+    private boolean usuarioEsAdmin(ar.edu.huergo.swapify.entity.security.Usuario usuario) {
+        if (usuario == null || usuario.getRoles() == null) {
+            return false;
+        }
+        return usuario.getRoles().stream()
+                .filter(java.util.Objects::nonNull)
+                .map(ar.edu.huergo.swapify.entity.security.Rol::getNombre)
+                .anyMatch(nombre -> nombre != null && nombre.equalsIgnoreCase("ADMIN"));
     }
 }

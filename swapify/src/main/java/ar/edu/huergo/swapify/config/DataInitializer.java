@@ -1,5 +1,6 @@
 package ar.edu.huergo.swapify.config;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.boot.CommandLineRunner;
@@ -19,25 +20,64 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initData(RolRepository rolRepository, UsuarioRepository usuarioRepository, PasswordEncoder encoder) {
         return args -> {
-            Rol admin = rolRepository.findByNombre("ADMIN").orElseGet(() -> rolRepository.save(new Rol("ADMIN")));
-            Rol cliente = rolRepository.findByNombre("CLIENTE").orElseGet(() -> rolRepository.save(new Rol("CLIENTE")));
+            Rol admin = rolRepository.findByNombre("ADMIN")
+                    .orElseGet(() -> rolRepository.save(new Rol("ADMIN")));
+            Rol cliente = rolRepository.findByNombre("CLIENTE")
+                    .orElseGet(() -> rolRepository.save(new Rol("CLIENTE")));
 
-            if (usuarioRepository.findByUsername("admin@huergo.edu.ar").isEmpty()) {
-                String adminPassword = "AdminSuperSegura@123";
-                PasswordValidator.validate(adminPassword);
-                Usuario u = new Usuario("admin@huergo.edu.ar", encoder.encode(adminPassword));
-                u.setRoles(Set.of(admin));
-                usuarioRepository.save(u);
-            }
+            asegurarUsuario(
+                    "admin@huergo.edu.ar",
+                    "AdminSuperSegura@123",
+                    encoder,
+                    usuarioRepository,
+                    Set.of(admin, cliente));
 
-            if (usuarioRepository.findByUsername("cliente@huergo.edu.ar").isEmpty()) {
-                String clientePassword = "ClienteSeguro@123";
-                PasswordValidator.validate(clientePassword);
-                Usuario u = new Usuario("cliente@huergo.edu.ar", encoder.encode(clientePassword));
-                u.setRoles(Set.of(cliente));
-                usuarioRepository.save(u);
-            }
+            asegurarUsuario(
+                    "cliente@huergo.edu.ar",
+                    "ClienteSeguro@123",
+                    encoder,
+                    usuarioRepository,
+                    Set.of(cliente));
         };
+    }
+
+    private void asegurarUsuario(String username,
+                                 String rawPassword,
+                                 PasswordEncoder encoder,
+                                 UsuarioRepository usuarioRepository,
+                                 Set<Rol> rolesRequeridos) {
+        PasswordValidator.validate(rawPassword);
+
+        String usernameNormalizado = normalizarEmail(username);
+        Usuario usuario = usuarioRepository.findByUsernameIgnoreCase(usernameNormalizado).orElse(null);
+        if (usuario == null) {
+            usuario = new Usuario(usernameNormalizado, encoder.encode(rawPassword));
+        } else {
+            String passwordActual = usuario.getPassword();
+            if (passwordActual == null || passwordActual.isBlank()
+                    || !encoder.matches(rawPassword, passwordActual)) {
+                usuario.setPassword(encoder.encode(rawPassword));
+            }
+            if (usuario.getRoles() == null) {
+                usuario.setRoles(new HashSet<>());
+            }
+        }
+
+        if (usuario.getRoles() == null || usuario.getRoles().isEmpty()) {
+            usuario.setRoles(new HashSet<>(rolesRequeridos));
+        } else {
+            usuario.getRoles().addAll(rolesRequeridos);
+        }
+
+        usuario.setUsername(usernameNormalizado);
+        usuarioRepository.save(usuario);
+    }
+
+    private String normalizarEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+        return email.trim().toLowerCase();
     }
 }
 

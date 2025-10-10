@@ -34,13 +34,21 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody @Valid LoginDTO request) {
+        String usernameNormalizado = normalizarEmail(request.username());
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.username(), request.password()));
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.username());
+                new UsernamePasswordAuthenticationToken(usernameNormalizado, request.password()));
+        UserDetails userDetails = userDetailsService.loadUserByUsername(usernameNormalizado);
         List<String> roles =
                 userDetails.getAuthorities().stream().map(a -> a.getAuthority()).toList();
         String token = jwtTokenService.generarToken(userDetails, roles);
         return ResponseEntity.ok(Map.of("token", token));
+    }
+
+    private String normalizarEmail(String email) {
+        if (email == null) {
+            return "";
+        }
+        return email.trim().toLowerCase();
     }
 }
 

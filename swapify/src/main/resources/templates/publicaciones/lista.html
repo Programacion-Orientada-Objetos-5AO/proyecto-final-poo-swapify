@@ -74,18 +74,36 @@
     <div class="row g-4" th:if="${!requiereLogin and !#lists.isEmpty(publicaciones)}">
       <div class="col-md-6 col-xl-4" th:each="p : ${publicaciones}">
         <div class="card publication-card h-100">
-          <div class="publication-card__media" th:if="${p.imagenDataUri != null}">
+          <div class="publication-card__media"
+               th:if="${p.imagenDataUri != null}"
+               th:classappend="${p.estado != null and p.estado.name() == 'EN_NEGOCIACION'} ? ' reserved' : ''">
             <img th:src="${p.imagenDataUri}"
                  th:alt="${'Imagen de ' + p.nombre}">
           </div>
           <div class="publication-card__media placeholder" th:if="${p.imagenDataUri == null}">
             <i class="bi bi-image"></i>
           </div>
-          <div class="card-body d-flex flex-column gap-3">
+          <div class="card-body d-flex flex-column gap-3"
+               th:with="estado=${p.estado != null ? p.estado.name() : 'ACTIVA'}">
             <div>
               <div class="d-flex justify-content-between align-items-start gap-3">
                 <h3 class="h5 card-title mb-0" th:text="${p.nombre}">Nombre de la publicación</h3>
-                <span class="badge text-bg-primary-subtle text-primary">Disponible</span>
+                <span class="badge-status"
+                      th:classappend="${estado == 'ACTIVA'} ? ' badge-status--activa' :
+                                     (${estado == 'EN_NEGOCIACION'} ? ' badge-status--negociacion' :
+                                     (${estado == 'PAUSADA'} ? ' badge-status--pausada' : ' badge-status--finalizada'))">
+                  <i class="bi"
+                     th:class="${estado == 'ACTIVA'} ? 'bi-lightning-charge-fill' :
+                                (${estado == 'EN_NEGOCIACION'} ? 'bi-people-arrows' :
+                                (${estado == 'PAUSADA'} ? 'bi-pause-circle-fill' : 'bi-flag-fill'))"></i>
+                  <span th:text="${estado == 'ACTIVA'} ? 'Disponible' :
+                                    (${estado == 'EN_NEGOCIACION'} ? 'En negociación' :
+                                    (${estado == 'PAUSADA'} ? 'Pausada' : 'Finalizada'))">Disponible</span>
+                </span>
+              </div>
+              <div class="publication-card__official" th:if="${p.oficial}">
+                <i class="bi bi-patch-check-fill"></i>
+                <span>Swapify Oficial</span>
               </div>
               <p class="card-text text-body-secondary mt-2 mb-0" th:text="${p.descripcion}">Descripción</p>
             </div>
@@ -100,11 +118,14 @@
               </div>
               <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-calendar3 text-primary"></i>
-                <span th:text="${#temporals.format(p.fechaPublicacion,'dd/MM/yyyy HH:mm')}">--/--/----</span>
+                <span th:text="${p.fechaPublicacion != null ? #temporals.format(p.fechaPublicacion,'dd/MM/yyyy HH:mm') : 'Sin fecha'}">--/--/----</span>
               </div>
               <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-person-circle text-primary"></i>
-                <span th:text="${p.usuario != null ? p.usuario.username : p.usuarioUsername}">Usuario</span>
+                <span th:text="${p.oficial ? 'Swapify Oficial' : (p.usuario != null ? p.usuario.username : p.usuarioUsername)}">Usuario</span>
+                <span class="badge badge-oficial" th:if="${p.oficial}">
+                  <i class="bi bi-shield-lock-fill"></i> Oficial
+                </span>
               </div>
             </div>
             <div class="d-flex align-items-center justify-content-between mt-auto flex-wrap gap-2">

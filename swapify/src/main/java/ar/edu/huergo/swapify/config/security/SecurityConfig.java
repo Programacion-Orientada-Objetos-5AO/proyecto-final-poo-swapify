@@ -57,6 +57,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/publicaciones").hasRole("CLIENTE")
                 .requestMatchers(HttpMethod.GET, "/api/publicaciones/reporte").hasRole("ADMIN")
                 .requestMatchers("/api/**").authenticated()
+                .requestMatchers("/web/admin/**").hasRole("ADMIN")
                 .requestMatchers("/web/publicaciones/nueva").authenticated()
                 .requestMatchers(HttpMethod.POST, "/web/publicaciones").authenticated()
                 .anyRequest().permitAll()
@@ -129,7 +130,7 @@ public class SecurityConfig {
      */
     @Bean
     UserDetailsService userDetailsService(UsuarioRepository usuarioRepository) {
-        return username -> usuarioRepository.findByUsername(username)
+        return username -> usuarioRepository.findByUsernameIgnoreCase(username)
             .map(usuario -> org.springframework.security.core.userdetails.User
                 .withUsername(usuario.getUsername())
                 .password(usuario.getPassword())

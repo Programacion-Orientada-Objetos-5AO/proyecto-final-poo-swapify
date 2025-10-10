@@ -64,7 +64,7 @@ public class PublicacionController {
      * Recupera el detalle de una publicación por su identificador.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<MostrarPublicacionDTO> obtenerPorId(@PathVariable Long id) {
+    public ResponseEntity<MostrarPublicacionDTO> obtenerPorId(@PathVariable("id") Long id) {
         Publicacion p = publicacionService.obtenerPorId(id);
         return ResponseEntity.ok(publicacionMapper.toDTO(p));
     }
@@ -93,7 +93,7 @@ public class PublicacionController {
      * específica.
      */
     @GetMapping("/usuario/{usuarioId}")
-    public ResponseEntity<List<MostrarPublicacionDTO>> obtenerPublicacionesPorUsuario(@PathVariable Long usuarioId) {
+    public ResponseEntity<List<MostrarPublicacionDTO>> obtenerPublicacionesPorUsuario(@PathVariable("usuarioId") Long usuarioId) {
         List<Publicacion> publicaciones = publicacionService.obtenerPublicacionesPorUsuario(usuarioId);
         return ResponseEntity.ok(publicacionMapper.toDTOList(publicaciones));
     }

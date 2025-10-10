@@ -38,7 +38,11 @@ public class PublicacionMapper {
                 publicacion.getFechaPublicacion(),
                 publicacion.getUsuario() != null ? publicacion.getUsuario().getUsername() : null,
                 publicacion.tieneImagen() ? Base64.getEncoder().encodeToString(publicacion.getImagen()) : null,
-                publicacion.getImagenContentType()
+                publicacion.getImagenContentType(),
+                publicacion.getEstado(),
+                publicacion.isOficial(),
+                publicacion.getFechaReserva(),
+                publicacion.getFechaCierre()
         );
     }
 

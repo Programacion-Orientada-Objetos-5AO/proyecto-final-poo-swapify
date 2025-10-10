@@ -19,24 +19,28 @@ public class OfertaController {
     private final OfertaService ofertaService;
 
     @PostMapping("/{ofertaId}/aceptar")
-    public ResponseEntity<Void> aceptarOferta(@PathVariable Long publicacionId,
-                                              @PathVariable Long ofertaId,
+    public ResponseEntity<Void> aceptarOferta(@PathVariable("publicacionId") Long publicacionId,
+                                              @PathVariable("ofertaId") Long ofertaId,
                                               @AuthenticationPrincipal User principal) {
         if (principal == null) {
             throw new AccessDeniedException("Debés iniciar sesión para gestionar ofertas");
         }
-        ofertaService.aceptarOferta(publicacionId, ofertaId, principal.getUsername());
+        boolean esAdmin = principal.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        ofertaService.aceptarOferta(publicacionId, ofertaId, principal.getUsername(), esAdmin);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{ofertaId}/rechazar")
-    public ResponseEntity<Void> rechazarOferta(@PathVariable Long publicacionId,
-                                               @PathVariable Long ofertaId,
+    public ResponseEntity<Void> rechazarOferta(@PathVariable("publicacionId") Long publicacionId,
+                                               @PathVariable("ofertaId") Long ofertaId,
                                                @AuthenticationPrincipal User principal) {
         if (principal == null) {
             throw new AccessDeniedException("Debés iniciar sesión para gestionar ofertas");
         }
-        ofertaService.rechazarOferta(publicacionId, ofertaId, principal.getUsername());
+        boolean esAdmin = principal.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        ofertaService.rechazarOferta(publicacionId, ofertaId, principal.getUsername(), esAdmin);
         return ResponseEntity.noContent().build();
     }
 }

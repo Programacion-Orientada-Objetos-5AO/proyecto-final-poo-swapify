@@ -20,6 +20,10 @@
         <div class="card shadow-sm border-0">
           <div class="card-body p-4 p-lg-5">
             <h2 class="h4 fw-semibold mb-4">Información de la publicación</h2>
+            <div class="official-highlight" th:if="${esAdmin}">
+              <i class="bi bi-patch-check-fill"></i>
+              Esta publicación se mostrará como <strong>Swapify Oficial</strong> y tendrá visibilidad preferente.
+            </div>
             <form th:action="@{/web/publicaciones}" method="post" th:object="${publicacion}" class="vstack gap-4" enctype="multipart/form-data">
               <div>
                 <label class="form-label">Nombre del producto *</label>

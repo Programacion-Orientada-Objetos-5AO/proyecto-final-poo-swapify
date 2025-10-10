@@ -319,6 +319,25 @@ a:focus {
   padding: 0.7rem 1rem;
 }
 
+input.form-control,
+textarea.form-control,
+select.form-control {
+  color: var(--text-primary) !important;
+  caret-color: var(--brand-secondary);
+}
+
+input.form-control:-webkit-autofill,
+textarea.form-control:-webkit-autofill,
+select.form-control:-webkit-autofill {
+  -webkit-text-fill-color: var(--text-primary);
+  box-shadow: 0 0 0 1000px rgba(20, 16, 50, 0.85) inset;
+}
+
+.input-group-text {
+  color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 .form-control:focus {
   border-color: rgba(var(--brand-primary-rgb), 0.6);
   box-shadow: 0 0 0 0.2rem rgba(var(--brand-primary-rgb), 0.22);
@@ -359,6 +378,51 @@ a:focus {
 .badge.text-bg-primary {
   background: rgba(var(--brand-primary-rgb), 0.9) !important;
   color: #fff !important;
+}
+
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+}
+
+.badge-status i {
+  font-size: 0.95rem;
+}
+
+.badge-status--activa {
+  background: rgba(var(--brand-secondary-rgb), 0.15);
+  color: var(--success-color);
+  border: 1px solid rgba(var(--brand-secondary-rgb), 0.35);
+}
+
+.badge-status--negociacion {
+  background: rgba(var(--brand-primary-rgb), 0.15);
+  color: rgba(var(--brand-primary-rgb), 0.9);
+  border: 1px solid rgba(var(--brand-primary-rgb), 0.35);
+}
+
+.badge-status--pausada {
+  background: rgba(247, 201, 72, 0.15);
+  color: var(--warning-color);
+  border: 1px solid rgba(247, 201, 72, 0.3);
+}
+
+.badge-status--finalizada {
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--danger-color);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+}
+
+.badge-oficial {
+  background: linear-gradient(135deg, rgba(var(--brand-primary-rgb), 0.85), rgba(var(--brand-secondary-rgb), 0.7));
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 12px 30px rgba(var(--brand-primary-rgb), 0.3);
 }
 
 .badge-soft {
@@ -551,6 +615,103 @@ a:focus {
   font-size: 0.95rem;
 }
 
+.official-highlight {
+  background: linear-gradient(135deg, rgba(var(--brand-primary-rgb), 0.45), rgba(var(--brand-secondary-rgb), 0.45));
+  border-radius: var(--border-radius-sm);
+  padding: 0.6rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+}
+
+.official-highlight i {
+  color: var(--brand-secondary);
+}
+
+.admin-panel {
+  display: grid;
+  gap: 2rem;
+}
+
+.admin-summary {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.admin-summary-card {
+  background: rgba(18, 12, 52, 0.85);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-summary-card h4 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+}
+
+.admin-summary-card strong {
+  font-size: 2rem;
+  color: #fff;
+}
+
+.admin-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.admin-section-title .badge {
+  font-size: 0.8rem;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(18, 12, 52, 0.75);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.admin-table thead {
+  background: rgba(18, 12, 52, 0.9);
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  vertical-align: top;
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-actions form {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.admin-actions input[type="text"],
+.admin-actions input[type="email"],
+.admin-actions input[type="password"] {
+  min-width: 12rem;
+  padding: 0.45rem 0.75rem;
+}
+
 /* Publicaciones */
 .publicaciones-page {
   display: grid;
@@ -629,12 +790,39 @@ a:focus {
   object-fit: cover;
 }
 
+.publication-card__media.reserved::after {
+  content: "Reservada";
+  position: absolute;
+  inset: 1rem;
+  border-radius: var(--border-radius);
+  background: rgba(9, 6, 28, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
 .publication-card__media.placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2.25rem;
   color: rgba(255, 255, 255, 0.55);
+}
+
+.publication-card__official {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.publication-card__official i {
+  color: var(--brand-secondary);
 }
 
 .publication-card__meta {
@@ -682,6 +870,10 @@ a:focus {
   gap: 1rem;
 }
 
+.detail-meta .badge-oficial {
+  margin-left: 0.5rem;
+}
+
 .detail-meta-item {
   display: flex;
   gap: 0.85rem;
@@ -701,6 +893,45 @@ a:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 0.85rem;
+}
+
+.detail-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.detail-state-actions form {
+  display: inline;
+}
+
+.detail-state-actions .btn {
+  min-width: 12rem;
+}
+
+.coordination-card {
+  background: rgba(18, 12, 52, 0.9);
+  border: 1px solid rgba(var(--brand-secondary-rgb), 0.25);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.coordination-card__contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.coordination-card__contacts .btn {
+  flex: 1 1 220px;
+}
+
+.coordination-note {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 .publication-media {

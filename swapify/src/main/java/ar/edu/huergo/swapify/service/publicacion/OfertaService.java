@@ -2,6 +2,7 @@ package ar.edu.huergo.swapify.service.publicacion;
 
 import ar.edu.huergo.swapify.dto.publicacion.CrearOfertaDTO;
 import ar.edu.huergo.swapify.entity.publicacion.EstadoOferta;
+import ar.edu.huergo.swapify.entity.publicacion.EstadoPublicacion;
 import ar.edu.huergo.swapify.entity.publicacion.Oferta;
 import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
 import ar.edu.huergo.swapify.entity.security.Usuario;
@@ -37,6 +38,10 @@ public class OfertaService {
 
         Publicacion publicacion = publicacionRepository.findById(publicacionId)
                 .orElseThrow(() -> new EntityNotFoundException("Publicación no encontrada"));
+
+        if (!publicacion.estaActiva()) {
+            throw new IllegalStateException("La publicación no acepta nuevas ofertas en este momento");
+        }
 
         Usuario usuario = usuarioRepository.findByUsernameIgnoreCase(username.trim())
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
@@ -100,8 +105,8 @@ public class OfertaService {
     }
 
     @Transactional
-    public Oferta aceptarOferta(Long publicacionId, Long ofertaId, String username) {
-        Oferta oferta = obtenerOfertaParaGestion(publicacionId, ofertaId, username);
+    public Oferta aceptarOferta(Long publicacionId, Long ofertaId, String username, boolean esAdmin) {
+        Oferta oferta = obtenerOfertaParaGestion(publicacionId, ofertaId, username, esAdmin);
 
         if (oferta.estaAceptada()) {
             return oferta;
@@ -114,20 +119,31 @@ public class OfertaService {
         oferta.setEstado(EstadoOferta.ACEPTADA);
         oferta.setFechaRespuesta(ahora);
 
+        Publicacion publicacion = oferta.getPublicacion();
+        if (publicacion != null) {
+            publicacion.marcarEnNegociacion(ahora);
+            publicacionRepository.save(publicacion);
+        }
+
         List<Oferta> otrasOfertas = ofertaRepository.findByPublicacionIdAndIdNot(publicacionId, ofertaId);
+        boolean huboCambios = false;
         for (Oferta otra : otrasOfertas) {
             if (otra.estaPendiente()) {
                 otra.setEstado(EstadoOferta.RECHAZADA);
                 otra.setFechaRespuesta(ahora);
+                huboCambios = true;
             }
         }
+        if (huboCambios) {
+            ofertaRepository.saveAll(otrasOfertas);
+        }
 
-        return oferta;
+        return ofertaRepository.save(oferta);
     }
 
     @Transactional
-    public Oferta rechazarOferta(Long publicacionId, Long ofertaId, String username) {
-        Oferta oferta = obtenerOfertaParaGestion(publicacionId, ofertaId, username);
+    public Oferta rechazarOferta(Long publicacionId, Long ofertaId, String username, boolean esAdmin) {
+        Oferta oferta = obtenerOfertaParaGestion(publicacionId, ofertaId, username, esAdmin);
 
         if (oferta.estaRechazada()) {
             return oferta;
@@ -139,10 +155,26 @@ public class OfertaService {
         LocalDateTime ahora = LocalDateTime.now();
         oferta.setEstado(EstadoOferta.RECHAZADA);
         oferta.setFechaRespuesta(ahora);
-        return oferta;
+        return ofertaRepository.save(oferta);
     }
 
-    private Oferta obtenerOfertaParaGestion(Long publicacionId, Long ofertaId, String username) {
+    @Transactional(readOnly = true)
+    public java.util.Optional<Oferta> obtenerOfertaAceptada(Long publicacionId) {
+        return ofertaRepository.findFirstByPublicacionIdAndEstadoOrderByFechaRespuestaDesc(publicacionId,
+                EstadoOferta.ACEPTADA);
+    }
+
+    @Transactional(readOnly = true)
+    public long contarPorEstado(EstadoOferta estado) {
+        return ofertaRepository.countByEstado(estado);
+    }
+
+    @Transactional(readOnly = true)
+    public long contarTotal() {
+        return ofertaRepository.count();
+    }
+
+    private Oferta obtenerOfertaParaGestion(Long publicacionId, Long ofertaId, String username, boolean esAdmin) {
         if (username == null || username.isBlank()) {
             throw new AccessDeniedException("Debés iniciar sesión para gestionar ofertas");
         }
@@ -151,9 +183,14 @@ public class OfertaService {
                 .orElseThrow(() -> new EntityNotFoundException("Oferta no encontrada"));
 
         Publicacion publicacion = oferta.getPublicacion();
-        if (publicacion == null || publicacion.getUsuario() == null
-                || !username.equals(publicacion.getUsuario().getUsername())) {
+        boolean esPropietario = publicacion != null && publicacion.getUsuario() != null
+                && publicacion.getUsuario().getUsername() != null
+                && publicacion.getUsuario().getUsername().equalsIgnoreCase(username.trim());
+        if (!esPropietario && !esAdmin) {
             throw new AccessDeniedException("No tenés permiso para gestionar esta oferta");
+        }
+        if (publicacion != null && EstadoPublicacion.FINALIZADA.equals(publicacion.getEstado())) {
+            throw new IllegalStateException("La publicación ya fue finalizada");
         }
         return oferta;
     }

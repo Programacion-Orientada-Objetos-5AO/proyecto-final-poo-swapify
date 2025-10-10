@@ -3,6 +3,7 @@ package ar.edu.huergo.swapify.dto.publicacion;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import ar.edu.huergo.swapify.entity.publicacion.EstadoPublicacion;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -18,4 +19,8 @@ public class MostrarPublicacionDTO {
     private String usuarioUsername;
     private String imagenBase64;
     private String imagenContentType;
+    private EstadoPublicacion estado;
+    private boolean oficial;
+    private LocalDateTime fechaReserva;
+    private LocalDateTime fechaCierre;
 }

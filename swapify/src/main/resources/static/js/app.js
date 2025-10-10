@@ -11,18 +11,18 @@ function inicializarLoginForm() {
   loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(loginForm);
-    const username = formData.get("username");
-    const password = formData.get("password");
+    const username = formData.get("username")?.toString().trim() ?? "";
+    const password = formData.get("password")?.toString() ?? "";
 
     try {
       const response = await fetch("/web/login", {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
           Accept: "application/json",
         },
         credentials: "same-origin",
-        body: new URLSearchParams({ username, password }),
+        body: JSON.stringify({ username, password }),
       });
       let data = {};
       const isJson = response.headers.get("content-type")?.includes("application/json");
@@ -34,7 +34,11 @@ function inicializarLoginForm() {
         localStorage.setItem("jwtToken", data.token);
         window.location.href = "/web/publicaciones";
       } else {
-        mostrarMensajeError(data.error || "Error al iniciar sesión");
+        let mensaje = data.error;
+        if (!mensaje && !isJson) {
+          mensaje = await response.text();
+        }
+        mostrarMensajeError(mensaje || "Error al iniciar sesión");
       }
     } catch (error) {
       console.error("Error:", error);

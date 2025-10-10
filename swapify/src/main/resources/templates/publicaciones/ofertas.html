@@ -3,11 +3,28 @@
 <head><meta charset="UTF-8"><title>Ofertas</title></head>
 <body>
 <div th:replace="~{base :: layout(${titulo} ?: 'Ofertas de la publicación', ~{::section})}">
-  <section class="offers-dashboard">
+  <section class="offers-dashboard" th:with="estado=${estadoPublicacion != null ? estadoPublicacion.name() : 'ACTIVA'}">
     <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-4">
       <div>
         <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones/{id}(id=${publicacion.id})}"><i class="bi bi-arrow-left"></i> Volver al detalle</a>
-        <h1 class="display-6 fw-bold mt-4 mb-1" th:text="${publicacion.nombre}">Publicación</h1>
+        <div class="d-flex align-items-center flex-wrap gap-3 mt-4">
+          <h1 class="display-6 fw-bold mb-1" th:text="${publicacion.nombre}">Publicación</h1>
+          <span class="badge-status"
+                th:classappend="${estado == 'ACTIVA'} ? ' badge-status--activa' :
+                               (${estado == 'EN_NEGOCIACION'} ? ' badge-status--negociacion' :
+                               (${estado == 'PAUSADA'} ? ' badge-status--pausada' : ' badge-status--finalizada'))">
+            <i class="bi"
+               th:class="${estado == 'ACTIVA'} ? 'bi-lightning-charge-fill' :
+                          (${estado == 'EN_NEGOCIACION'} ? 'bi-people-arrows' :
+                          (${estado == 'PAUSADA'} ? 'bi-pause-circle-fill' : 'bi-flag-fill'))"></i>
+            <span th:text="${estado == 'ACTIVA'} ? 'Disponible' :
+                              (${estado == 'EN_NEGOCIACION'} ? 'En negociación' :
+                              (${estado == 'PAUSADA'} ? 'Pausada' : 'Finalizada'))">Estado</span>
+          </span>
+          <span class="badge badge-oficial" th:if="${publicacion.oficial}">
+            <i class="bi bi-patch-check-fill"></i> Swapify Oficial
+          </span>
+        </div>
         <p class="text-body-secondary mb-0">Gestioná cada oferta recibida y respondé con un solo clic.</p>
       </div>
       <div class="card shadow-sm border-0">
@@ -35,10 +52,53 @@
       </div>
     </div>
 
+    <div class="coordination-card mb-4" th:if="${estado == 'EN_NEGOCIACION' and fechaReserva != null}">
+      <h3 class="h6 fw-semibold mb-1"><i class="bi bi-calendar-check text-success me-2"></i>Reserva creada</h3>
+      <p class="mb-0">La publicación está reservada desde <strong th:text="${#temporals.format(fechaReserva,'dd/MM/yyyy HH:mm')}">fecha</strong>. Recordá cerrar el intercambio cuando finalice.</p>
+    </div>
+
+    <div class="detail-state-actions mb-4" th:if="${esPropietario or esAdmin}">
+      <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+        <input type="hidden" name="estado" value="EN_NEGOCIACION"/>
+        <input type="hidden" name="redirect" value="panel"/>
+        <button type="submit" class="btn btn-outline-primary btn-icon" th:disabled="${estado == 'EN_NEGOCIACION'}">
+          <i class="bi bi-people"></i> Reservar publicación
+        </button>
+      </form>
+      <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+        <input type="hidden" name="estado" value="FINALIZADA"/>
+        <input type="hidden" name="redirect" value="panel"/>
+        <button type="submit" class="btn btn-success btn-icon" th:disabled="${estado == 'FINALIZADA'}">
+          <i class="bi bi-check2-circle"></i> Marcar como finalizada
+        </button>
+      </form>
+      <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+        <input type="hidden" name="estado" value="ACTIVA"/>
+        <input type="hidden" name="redirect" value="panel"/>
+        <button type="submit" class="btn btn-outline-light btn-icon" th:disabled="${estado == 'ACTIVA'}">
+          <i class="bi bi-arrow-counterclockwise"></i> Reabrir publicación
+        </button>
+      </form>
+      <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+        <input type="hidden" name="estado" value="PAUSADA"/>
+        <input type="hidden" name="redirect" value="panel"/>
+        <button type="submit" class="btn btn-outline-warning btn-icon text-warning" th:disabled="${estado == 'PAUSADA'}">
+          <i class="bi bi-pause-circle"></i> Pausar
+        </button>
+      </form>
+    </div>
+
     <div class="card border-0 shadow-sm">
       <div class="card-body p-4 p-lg-5">
         <div th:if="${successOferta != null}" class="alert alert-success" th:text="${successOferta}">Acción realizada</div>
         <div th:if="${errorOferta != null}" class="alert alert-danger" th:text="${errorOferta}">Error al actualizar la oferta</div>
+
+        <div class="alert alert-warning" th:if="${estado == 'PAUSADA'}">
+          <i class="bi bi-clock-history me-2"></i>Esta publicación está pausada: las ofertas nuevas quedarán deshabilitadas hasta reactivarla.
+        </div>
+        <div class="alert alert-success" th:if="${estado == 'FINALIZADA'}">
+          <i class="bi bi-check-circle me-2"></i>El intercambio fue marcado como finalizado. Podés archivar o eliminar la publicación.
+        </div>
 
         <div th:if="${#lists.isEmpty(ofertas)}" class="empty-state text-center py-5">
           <i class="bi bi-envelope-open display-4 text-body-secondary"></i>
