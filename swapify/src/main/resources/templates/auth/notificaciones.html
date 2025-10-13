@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Notificaciones</title></head>
+<body>
+<div th:replace="~{base :: layout(${titulo} ?: 'Notificaciones', ~{::section})}">
+  <section class="notifications">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones}"><i class="bi bi-arrow-left"></i> Volver al catálogo</a>
+        <h1 class="display-6 fw-bold mt-4 mb-1">Centro de notificaciones</h1>
+        <p class="text-body-secondary mb-0">Enterate al instante de lo que pasa con tus publicaciones y ofertas.</p>
+      </div>
+      <form th:action="@{/web/notificaciones/todas/leidas}" method="post">
+        <button type="submit" class="btn btn-outline-success btn-icon"><i class="bi bi-check-all"></i> Marcar todas como leídas</button>
+      </form>
+    </div>
+
+    <div class="list-group notifications mt-4">
+      <div class="list-group-item list-group-item-action d-flex align-items-start gap-3"
+           th:each="notif : ${notificaciones}"
+           th:classappend="${notif.leida} ? ' notification-read' : ' notification-unread'">
+        <div class="notification-icon rounded-circle">
+          <i class="bi" th:classappend="${notif.icono != null} ? ' ' + notif.icono : ' bi-bell-fill'"></i>
+        </div>
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h2 class="h6 fw-semibold mb-1" th:text="${notif.titulo}">Título</h2>
+              <p class="mb-2 text-body-secondary" th:text="${notif.mensaje}">Mensaje</p>
+              <a class="btn btn-sm btn-outline-primary"
+                 th:if="${notif.enlace != null}"
+                 th:href="${notif.enlace}">Ver detalle</a>
+            </div>
+            <div class="text-end text-body-secondary small">
+              <span th:text="${#temporals.format(notif.fechaCreacion, 'dd/MM/yyyy HH:mm')}">Fecha</span>
+            </div>
+          </div>
+          <form class="mt-2" th:if="${!notif.leida}" th:action="@{/web/notificaciones/{id}/leer(id=${notif.id})}" method="post">
+            <button type="submit" class="btn btn-sm btn-link text-success p-0"><i class="bi bi-check2"></i> Marcar como leída</button>
+          </form>
+        </div>
+      </div>
+      <div class="alert alert-info" th:if="${#lists.isEmpty(notificaciones)}">
+        <i class="bi bi-bell"></i> No tenés notificaciones pendientes. ¡Seguí explorando Swapify!
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

@@ -1,6 +1,8 @@
 package ar.edu.huergo.swapify.dto.publicacion;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.AssertTrue;
@@ -32,24 +34,24 @@ public class CrearPublicacionDTO {
     @NotBlank(message = "Debe indicar el objeto a cambiar")
     private String objetoACambiar;
 
-    private String imagenBase64;
+    private List<String> imagenesBase64 = new ArrayList<>();
 
-    private String imagenContentType;
+    private List<String> imagenesContentType = new ArrayList<>();
 
     @JsonIgnore
-    private transient MultipartFile imagenArchivo;
+    private transient List<MultipartFile> imagenesArchivos = new ArrayList<>();
 
     /**
-     * Valida que la carga incluya una imagen ya sea como archivo o en formato
-     * Base64.
+     * Valida que la carga incluya al menos una imagen ya sea como archivo o en
+     * formato Base64.
      *
      * @return {@code true} cuando existe algún tipo de representación de imagen.
      */
     @JsonIgnore
-    @AssertTrue(message = "La imagen es obligatoria")
+    @AssertTrue(message = "Debés adjuntar al menos una imagen")
     public boolean isImagenPresente() {
-        boolean tieneArchivo = imagenArchivo != null && !imagenArchivo.isEmpty();
-        boolean tieneBase64 = imagenBase64 != null && !imagenBase64.isBlank();
-        return tieneArchivo || tieneBase64;
+        boolean hayArchivos = imagenesArchivos != null && imagenesArchivos.stream().anyMatch(f -> f != null && !f.isEmpty());
+        boolean hayBase64 = imagenesBase64 != null && imagenesBase64.stream().anyMatch(cadena -> cadena != null && !cadena.isBlank());
+        return hayArchivos || hayBase64;
     }
 }

@@ -2,7 +2,10 @@ package ar.edu.huergo.swapify.entity.publicacion;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 import ar.edu.huergo.swapify.entity.security.Usuario;
 import jakarta.persistence.*;
@@ -21,7 +24,7 @@ import lombok.ToString;
 @Table(name = "Publicacion")
 @Data
 @NoArgsConstructor
-@ToString(exclude = {"usuario", "imagen", "imagenBase64", "imagenDataUri"})
+@ToString(exclude = {"usuario", "imagenes", "legacyImagen"})
 public class Publicacion {
 
     @Id
@@ -69,22 +72,20 @@ public class Publicacion {
     @Column(name = "fecha_cierre")
     private LocalDateTime fechaCierre;
 
+    @OneToMany(mappedBy = "publicacion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("orden ASC")
+    private List<PublicacionImagen> imagenes = new ArrayList<>();
+
     @Lob
     @Column(name = "imagen", columnDefinition = "LONGBLOB")
-    private byte[] imagen;
+    private byte[] legacyImagen;
 
     @Column(name = "imagen_content_type", length = 100)
-    private String imagenContentType;
-
-    @Transient
-    private String imagenBase64;
-
-    @Transient
-    private String imagenDataUri;
+    private String legacyImagenContentType;
 
     public Publicacion(Long id, String nombre, BigDecimal precio, String descripcion,
-            String objetoACambiar, LocalDateTime fechaPublicacion, Usuario usuario, byte[] imagen,
-            String imagenContentType, LocalDateTime fechaReserva, LocalDateTime fechaCierre) {
+            String objetoACambiar, LocalDateTime fechaPublicacion, Usuario usuario, List<PublicacionImagen> imagenes,
+            LocalDateTime fechaReserva, LocalDateTime fechaCierre) {
         this.id = id;
         this.nombre = nombre;
         this.precio = precio;
@@ -96,8 +97,9 @@ public class Publicacion {
         this.oficial = false;
         this.fechaReserva = fechaReserva;
         this.fechaCierre = fechaCierre;
-        setImagen(imagen);
-        this.imagenContentType = imagenContentType;
+        if (imagenes != null) {
+            imagenes.forEach(this::agregarImagen);
+        }
     }
 
     /**
@@ -111,45 +113,54 @@ public class Publicacion {
         if (this.estado == null) {
             this.estado = EstadoPublicacion.ACTIVA;
         }
+        ordenarImagenes();
     }
 
-    /**
-     * Indica si la publicación posee una imagen persistida.
-     *
-     * @return {@code true} cuando existe contenido binario asociado.
-     */
-    public boolean tieneImagen() {
-        return imagen != null && imagen.length > 0;
+    public boolean tieneImagenes() {
+        return imagenes != null && !imagenes.isEmpty();
     }
 
-    /**
-     * Elimina cualquier representación de imagen vinculada a la publicación.
-     */
-    public void limpiarImagen() {
-        this.imagen = null;
-        this.imagenContentType = null;
-        this.imagenBase64 = null;
-        this.imagenDataUri = null;
+    public void limpiarImagenes() {
+        if (imagenes != null) {
+            imagenes.clear();
+        }
     }
 
-    /**
-     * Obtiene una copia defensiva del contenido de imagen para evitar escapes de
-     * referencias mutables.
-     *
-     * @return copia del arreglo de bytes o {@code null} si no hay imagen.
-     */
-    public byte[] getImagen() {
-        return imagen != null ? Arrays.copyOf(imagen, imagen.length) : null;
+    public void agregarImagen(PublicacionImagen imagen) {
+        if (imagen == null) {
+            return;
+        }
+        if (imagenes == null) {
+            imagenes = new ArrayList<>();
+        }
+        imagen.setPublicacion(this);
+        if (imagen.getOrden() < 0) {
+            imagen.setOrden(imagenes.size());
+        }
+        imagenes.add(imagen);
+        ordenarImagenes();
     }
 
-    /**
-     * Define el contenido de imagen almacenando una copia independiente del
-     * arreglo recibido.
-     *
-     * @param imagen datos binarios a asociar con la publicación.
-     */
-    public void setImagen(byte[] imagen) {
-        this.imagen = (imagen != null) ? Arrays.copyOf(imagen, imagen.length) : null;
+    public List<PublicacionImagen> getImagenesOrdenadas() {
+        ordenarImagenes();
+        return imagenes;
+    }
+
+    public PublicacionImagen getImagenPrincipal() {
+        return tieneImagenes() ? getImagenesOrdenadas().get(0) : null;
+    }
+
+    private void ordenarImagenes() {
+        if (imagenes != null) {
+            imagenes.sort(Comparator.comparingInt(PublicacionImagen::getOrden));
+            for (int i = 0; i < imagenes.size(); i++) {
+                PublicacionImagen imagen = imagenes.get(i);
+                if (imagen.getOrden() != i) {
+                    imagen.setOrden(i);
+                }
+                imagen.setPublicacion(this);
+            }
+        }
     }
 
     public boolean estaActiva() {
@@ -161,18 +172,17 @@ public class Publicacion {
     }
 
     public boolean estaFinalizada() {
-        return EstadoPublicacion.FINALIZADA.equals(estado);
+        return estado != null && EstadoPublicacion.FINALIZADA.equals(estado);
     }
 
-    public void marcarEnNegociacion(LocalDateTime momento) {
+    public void marcarEnNegociacion(LocalDateTime fecha) {
         this.estado = EstadoPublicacion.EN_NEGOCIACION;
-        this.fechaReserva = momento;
-        this.fechaCierre = null;
+        this.fechaReserva = fecha;
     }
 
-    public void marcarFinalizada(LocalDateTime momento) {
+    public void marcarFinalizada(LocalDateTime fecha) {
         this.estado = EstadoPublicacion.FINALIZADA;
-        this.fechaCierre = momento;
+        this.fechaCierre = fecha;
     }
 
     public void reactivar() {
@@ -183,5 +193,21 @@ public class Publicacion {
 
     public void pausar() {
         this.estado = EstadoPublicacion.PAUSADA;
+    }
+
+    public byte[] getLegacyImagen() {
+        return legacyImagen != null ? Arrays.copyOf(legacyImagen, legacyImagen.length) : null;
+    }
+
+    public void setLegacyImagen(byte[] legacyImagen) {
+        this.legacyImagen = legacyImagen != null ? Arrays.copyOf(legacyImagen, legacyImagen.length) : null;
+    }
+
+    public String getLegacyImagenContentType() {
+        return legacyImagenContentType;
+    }
+
+    public void setLegacyImagenContentType(String legacyImagenContentType) {
+        this.legacyImagenContentType = legacyImagenContentType;
     }
 }

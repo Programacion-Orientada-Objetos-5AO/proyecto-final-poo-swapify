@@ -1,5 +1,6 @@
 package ar.edu.huergo.swapify.entity.security;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -52,11 +53,27 @@ public class Usuario {
     )
     private Set<Rol> roles = new HashSet<>();
 
-    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Publicacion> publicaciones = new ArrayList<>();
+
+    @Column(name = "baneado_hasta")
+    private LocalDateTime baneadoHasta;
+
+    @Column(name = "motivo_ban", length = 500)
+    private String motivoBan;
 
     public Usuario(String username, String password) {
         this.username = username;
         this.password = password;
+    }
+
+    public boolean estaBaneado() {
+        return baneadoHasta != null && baneadoHasta.isAfter(LocalDateTime.now());
+    }
+
+    public boolean esAdministrador() {
+        return roles != null && roles.stream()
+                .filter(rol -> rol != null && rol.getNombre() != null)
+                .anyMatch(rol -> "ADMIN".equalsIgnoreCase(rol.getNombre()));
     }
 }

@@ -10,7 +10,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,16 +26,18 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import ar.edu.huergo.swapify.dto.publicacion.CrearPublicacionDTO;
 import ar.edu.huergo.swapify.entity.publicacion.EstadoPublicacion;
 import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
+import ar.edu.huergo.swapify.entity.publicacion.PublicacionImagen;
 import ar.edu.huergo.swapify.mapper.publicacion.PublicacionMapper;
 import ar.edu.huergo.swapify.repository.publicacion.PublicacionRepository;
 import ar.edu.huergo.swapify.repository.publicacion.OfertaRepository;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
 
 /**
  * Lógica de negocio para gestionar publicaciones y su contenido multimedia.
@@ -66,38 +70,19 @@ public class PublicacionService {
         p.setEstado(EstadoPublicacion.ACTIVA);
         p.setOficial(usuarioEsAdmin(managedUsuario));
 
-        MultipartFile archivo = dto.getImagenArchivo();
-        if (archivo != null && !archivo.isEmpty()) {
-            try {
-                byte[] bytes = archivo.getBytes();
-                if (bytes.length == 0) {
-                    throw new IllegalArgumentException("La imagen es obligatoria");
-                }
-                guardarImagen(p, bytes, archivo.getContentType());
-            } catch (IOException e) {
-                throw new IllegalArgumentException("No se pudo leer la imagen: " + e.getMessage(), e);
-            }
-        } else if (dto.getImagenBase64() != null && !dto.getImagenBase64().isBlank()) {
-            String base64Data = dto.getImagenBase64();
-            if (base64Data.contains(",")) {
-                base64Data = base64Data.substring(base64Data.indexOf(',') + 1);
-            }
-
-            byte[] bytes;
-            try {
-                bytes = decodificarBase64(base64Data);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("La imagen está dañada o tiene un formato inválido");
-            }
-
-            if (bytes.length == 0) {
-                throw new IllegalArgumentException("La imagen es obligatoria");
-            }
-
-            guardarImagen(p, bytes, dto.getImagenContentType());
-        } else {
-            throw new IllegalArgumentException("La imagen es obligatoria");
+        List<ImagenEntrada> imagenes = prepararEntradasImagen(dto);
+        if (imagenes.isEmpty()) {
+            throw new IllegalArgumentException("Debés adjuntar al menos una imagen");
         }
+        p.limpiarImagenes();
+        p.setLegacyImagen(null);
+        p.setLegacyImagenContentType(null);
+        int orden = 0;
+        for (ImagenEntrada entrada : imagenes) {
+            PublicacionImagen imagen = procesarImagenPublicacion(entrada.datos(), entrada.contentType(), orden++);
+            p.agregarImagen(imagen);
+        }
+
         Publicacion guardada = publicacionRepository.save(p);
         prepararPublicacionParaLectura(guardada);
         return guardada;
@@ -127,6 +112,27 @@ public class PublicacionService {
                     }
                     return publicacion.estaActiva();
                 })
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<Publicacion> buscarDisponibles(String consulta) {
+        if (consulta == null || consulta.isBlank()) {
+            return listarDisponibles();
+        }
+        String termino = consulta.trim();
+        List<Publicacion> encontradas = publicacionRepository
+                .findDistinctByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCaseOrObjetoACambiarContainingIgnoreCase(
+                        termino, termino, termino);
+        encontradas.forEach(this::prepararPublicacionParaLectura);
+        return encontradas.stream()
+                .filter(publicacion -> {
+                    if (publicacion.getEstado() == null) {
+                        publicacion.setEstado(EstadoPublicacion.ACTIVA);
+                    }
+                    return publicacion.estaActiva();
+                })
+                .sorted(Comparator.comparing(Publicacion::getFechaPublicacion, Comparator.nullsLast(Comparator.reverseOrder())))
                 .collect(Collectors.toList());
     }
 
@@ -240,22 +246,64 @@ public class PublicacionService {
         return publicacion;
     }
 
+    private List<ImagenEntrada> prepararEntradasImagen(CrearPublicacionDTO dto) {
+        List<ImagenEntrada> entradas = new ArrayList<>();
+        if (dto.getImagenesArchivos() != null) {
+            for (MultipartFile archivo : dto.getImagenesArchivos()) {
+                if (archivo == null || archivo.isEmpty()) {
+                    continue;
+                }
+                try {
+                    byte[] datos = archivo.getBytes();
+                    if (datos.length == 0) {
+                        continue;
+                    }
+                    entradas.add(new ImagenEntrada(datos, archivo.getContentType()));
+                } catch (IOException e) {
+                    throw new IllegalArgumentException("No se pudo leer la imagen: " + e.getMessage(), e);
+                }
+            }
+        }
+        if (dto.getImagenesBase64() != null) {
+            for (int i = 0; i < dto.getImagenesBase64().size(); i++) {
+                String base64Data = dto.getImagenesBase64().get(i);
+                if (base64Data == null || base64Data.isBlank()) {
+                    continue;
+                }
+                if (base64Data.contains(",")) {
+                    base64Data = base64Data.substring(base64Data.indexOf(',') + 1);
+                }
+                byte[] datos = decodificarBase64(base64Data);
+                if (datos.length == 0) {
+                    continue;
+                }
+                String contentType = null;
+                if (dto.getImagenesContentType() != null && dto.getImagenesContentType().size() > i) {
+                    contentType = dto.getImagenesContentType().get(i);
+                }
+                entradas.add(new ImagenEntrada(datos, contentType));
+            }
+        }
+        if (entradas.size() > 5) {
+            return new ArrayList<>(entradas.subList(0, 5));
+        }
+        return entradas;
+    }
+
     /**
      * Procesa y almacena la imagen asociada a una publicación aplicando
      * validaciones y optimizaciones.
      */
-    private void guardarImagen(Publicacion publicacion, byte[] bytes, String contentType) {
+    private PublicacionImagen procesarImagenPublicacion(byte[] bytes, String contentType, int orden) {
         if (bytes == null || bytes.length == 0) {
-            publicacion.limpiarImagen();
-            return;
+            throw new IllegalArgumentException("La imagen es obligatoria");
         }
 
         String tipoNormalizado = normalizarContentType(contentType);
         byte[] originales = bytes;
 
-        BufferedImage original = null;
         try {
-            original = leerImagen(bytes);
+            BufferedImage original = leerImagen(bytes);
             if (original == null) {
                 throw new IllegalArgumentException("La imagen está dañada o tiene un formato inválido");
             }
@@ -265,8 +313,11 @@ public class PublicacionService {
             if (optimizadas != null && optimizadas.length > MAX_IMAGE_BYTES) {
                 throw new IllegalArgumentException("La imagen supera el tamaño máximo permitido (5 MB)");
             }
-            publicacion.setImagen(optimizadas);
-            publicacion.setImagenContentType(procesada.contentType());
+            PublicacionImagen imagen = new PublicacionImagen();
+            imagen.setOrden(orden);
+            imagen.setDatos(optimizadas);
+            imagen.setContentType(procesada.contentType());
+            return imagen;
         } catch (OutOfMemoryError e) {
             log.error("Sin memoria para procesar la imagen ({} bytes)", bytes != null ? bytes.length : -1, e);
             throw new IllegalArgumentException("La imagen es demasiado grande para procesarla. Reducila e intentá nuevamente.");
@@ -280,8 +331,11 @@ public class PublicacionService {
             if (copia != null && copia.length > MAX_IMAGE_BYTES) {
                 throw new IllegalArgumentException("La imagen supera el tamaño máximo permitido (5 MB)");
             }
-            publicacion.setImagen(copia);
-            publicacion.setImagenContentType(tipoNormalizado);
+            PublicacionImagen imagen = new PublicacionImagen();
+            imagen.setOrden(orden);
+            imagen.setDatos(copia);
+            imagen.setContentType(tipoNormalizado);
+            return imagen;
         }
     }
 
@@ -302,22 +356,22 @@ public class PublicacionService {
             publicacion.getUsuario().getUsername();
         }
 
-        byte[] imagen = publicacion.getImagen();
-        if (imagen != null && imagen.length > 0) {
-            publicacion.setImagen(imagen);
-
-            String base64 = java.util.Base64.getEncoder().encodeToString(imagen);
-            publicacion.setImagenBase64(base64);
-
-            String contentType = publicacion.getImagenContentType();
-            if (contentType == null || contentType.isBlank()) {
-                contentType = "image/jpeg";
+        if (publicacion.getImagenesOrdenadas() != null) {
+            for (PublicacionImagen imagen : publicacion.getImagenesOrdenadas()) {
+                byte[] datos = imagen.getDatos();
+                if (datos != null && datos.length > 0) {
+                    String base64 = Base64.getEncoder().encodeToString(datos);
+                    String contentType = imagen.getContentType();
+                    if (contentType == null || contentType.isBlank()) {
+                        contentType = "image/jpeg";
+                    }
+                    imagen.setBase64(base64);
+                    imagen.setDataUri("data:" + contentType + ";base64," + base64);
+                } else {
+                    imagen.setBase64(null);
+                    imagen.setDataUri(null);
+                }
             }
-            publicacion.setImagenDataUri("data:" + contentType + ";base64," + base64);
-        } else {
-            publicacion.setImagen(null);
-            publicacion.setImagenBase64(null);
-            publicacion.setImagenDataUri(null);
         }
     }
 
@@ -359,38 +413,72 @@ public class PublicacionService {
         if (contentType.equalsIgnoreCase("image/jpg")) {
             return "image/jpeg";
         }
-        return contentType.toLowerCase();
+        if (contentType.equalsIgnoreCase("image/png")) {
+            return "image/png";
+        }
+        if (contentType.equalsIgnoreCase("image/gif")) {
+            return "image/gif";
+        }
+        if (contentType.equalsIgnoreCase("image/bmp")) {
+            return "image/bmp";
+        }
+        if (contentType.toLowerCase().contains("jpeg")) {
+            return "image/jpeg";
+        }
+        return contentType;
     }
 
-    /**
-     * Aplica escalado y compresión para mantener el tamaño de la imagen dentro
-     * de los límites permitidos.
-     */
-    private ImagenProcesada optimizarImagen(byte[] data, String contentType, BufferedImage original) throws IOException {
-        if (data == null || data.length == 0) {
-            return new ImagenProcesada(data, normalizarContentType(contentType));
+    private boolean usuarioEsAdmin(ar.edu.huergo.swapify.entity.security.Usuario usuario) {
+        return usuario.getRoles() != null && usuario.getRoles().stream()
+                .anyMatch(rol -> rol.getNombre() != null && rol.getNombre().equalsIgnoreCase("ADMIN"));
+    }
+
+    private boolean puedeGestionarPublicacion(Publicacion publicacion, String username, boolean esAdmin) {
+        if (publicacion == null) {
+            return false;
+        }
+        if (esAdmin) {
+            return true;
+        }
+        if (username == null || username.isBlank()) {
+            return false;
+        }
+        return publicacion.getUsuario() != null
+                && publicacion.getUsuario().getUsername() != null
+                && publicacion.getUsuario().getUsername().equalsIgnoreCase(username.trim());
+    }
+
+    private ImagenProcesada optimizarImagen(byte[] bytes, String contentType, BufferedImage original) throws IOException {
+        if (bytes == null || original == null) {
+            throw new IllegalArgumentException("Imagen inválida");
         }
 
-        byte[] procesada = data;
-        BufferedImage imagenBase = original;
+        boolean esJpeg = contentType != null && (contentType.equalsIgnoreCase("image/jpeg")
+                || contentType.equalsIgnoreCase("image/jpg"));
 
         EscaladoResult escalado = escalarSiEsNecesario(original, contentType);
+        BufferedImage imagenBase = original;
+        byte[] datos = bytes;
         if (escalado != null) {
-            procesada = escalado.datos();
             imagenBase = escalado.imagen();
+            datos = escalado.datos();
         }
 
-        if (procesada.length > MAX_IMAGE_BYTES) {
-            procesada = recomprimirComoJpeg(imagenBase);
-            return new ImagenProcesada(procesada, "image/jpeg");
+        if (!esJpeg && (contentType == null || contentType.isBlank() || !contentType.contains("png"))) {
+            byte[] recomprimida = recomprimirComoJpeg(imagenBase);
+            if (recomprimida != null && recomprimida.length < datos.length) {
+                datos = recomprimida;
+                contentType = "image/jpeg";
+            }
         }
 
-        return new ImagenProcesada(procesada, normalizarContentType(contentType));
+        if (datos != null && datos.length > MAX_IMAGE_BYTES) {
+            throw new IllegalArgumentException("La imagen supera el tamaño máximo permitido (5 MB)");
+        }
+
+        return new ImagenProcesada(datos, contentType != null ? contentType : "image/jpeg");
     }
 
-    /**
-     * Escala la imagen cuando supera las dimensiones máximas permitidas.
-     */
     private EscaladoResult escalarSiEsNecesario(BufferedImage original, String contentType) throws IOException {
         int width = original.getWidth();
         int height = original.getHeight();
@@ -497,6 +585,8 @@ public class PublicacionService {
         return "jpg";
     }
 
+    private record ImagenEntrada(byte[] datos, String contentType) {}
+
     private static class ImagenProcesada {
         private final byte[] datos;
         private final String contentType;
@@ -531,23 +621,5 @@ public class PublicacionService {
         public BufferedImage imagen() {
             return imagen;
         }
-    }
-
-    private boolean puedeGestionarPublicacion(Publicacion publicacion, String username, boolean esAdmin) {
-        if (esAdmin) {
-            return true;
-        }
-        return publicacion.getUsuario() != null && publicacion.getUsuario().getUsername() != null
-                && publicacion.getUsuario().getUsername().equalsIgnoreCase(username);
-    }
-
-    private boolean usuarioEsAdmin(ar.edu.huergo.swapify.entity.security.Usuario usuario) {
-        if (usuario == null || usuario.getRoles() == null) {
-            return false;
-        }
-        return usuario.getRoles().stream()
-                .filter(java.util.Objects::nonNull)
-                .map(ar.edu.huergo.swapify.entity.security.Rol::getNombre)
-                .anyMatch(nombre -> nombre != null && nombre.equalsIgnoreCase("ADMIN"));
     }
 }

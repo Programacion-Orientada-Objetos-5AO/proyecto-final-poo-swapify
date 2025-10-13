@@ -126,6 +126,9 @@
               </div>
             </div>
             <p class="mt-3 mb-0" th:text="${oferta.mensaje}">Mensaje</p>
+            <div class="mt-3" th:if="${oferta.imagenDataUri != null}">
+              <img class="rounded shadow-sm w-100" th:src="${oferta.imagenDataUri}" th:alt="${'Imagen de la oferta de ' + (oferta.usuario != null ? oferta.usuario.username : 'usuario')}" loading="lazy">
+            </div>
             <div class="mt-3" th:if="${oferta.estado == estadoAceptada && oferta.fechaRespuesta != null}">
               <small class="text-success-emphasis d-block">Confirmada el <span th:text="${#temporals.format(oferta.fechaRespuesta,'dd/MM/yyyy HH:mm')}">fecha</span></small>
             </div>

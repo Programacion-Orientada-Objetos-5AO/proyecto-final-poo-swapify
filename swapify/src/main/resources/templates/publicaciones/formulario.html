@@ -30,9 +30,9 @@
                 <input type="text" th:field="*{nombre}" class="form-control" placeholder="Ej: Bicicleta urbana rodado 29" required>
               </div>
               <div>
-                <label class="form-label">Imagen principal *</label>
-                <input type="file" th:field="*{imagenArchivo}" class="form-control" accept="image/*">
-                <div class="form-text">Elegí una imagen en formato JPG o PNG para destacar tu publicación.</div>
+                <label class="form-label">Galería de imágenes *</label>
+                <input type="file" th:field="*{imagenesArchivos}" class="form-control" accept="image/*" multiple>
+                <div class="form-text">Podés seleccionar hasta cinco imágenes en formato JPG o PNG para mostrar tu producto desde distintos ángulos.</div>
               </div>
               <div class="row g-3">
                 <div class="col-md-6">

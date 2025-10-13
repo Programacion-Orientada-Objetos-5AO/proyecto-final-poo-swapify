@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import ar.edu.huergo.swapify.dto.publicacion.CrearPublicacionDTO;
 import ar.edu.huergo.swapify.dto.publicacion.MostrarPublicacionDTO;
 import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
+import ar.edu.huergo.swapify.entity.publicacion.PublicacionImagen;
 
 /**
  * Transforma entidades de publicaciones en sus correspondientes DTO y viceversa
@@ -29,6 +30,25 @@ public class PublicacionMapper {
         if (publicacion == null) {
             return null;
         }
+        List<String> imagenes = new ArrayList<>();
+        String principal = null;
+        if (publicacion.getImagenesOrdenadas() != null) {
+            for (PublicacionImagen imagen : publicacion.getImagenesOrdenadas()) {
+                byte[] datos = imagen.getDatos();
+                if (datos == null || datos.length == 0) {
+                    continue;
+                }
+                String contentType = imagen.getContentType() != null ? imagen.getContentType() : "image/jpeg";
+                String base64 = Base64.getEncoder().encodeToString(datos);
+                String dataUri = "data:" + contentType + ";base64," + base64;
+                imagen.setBase64(base64);
+                imagen.setDataUri(dataUri);
+                imagenes.add(dataUri);
+                if (principal == null) {
+                    principal = dataUri;
+                }
+            }
+        }
         return new MostrarPublicacionDTO(
                 publicacion.getId(),
                 publicacion.getNombre(),
@@ -37,8 +57,8 @@ public class PublicacionMapper {
                 publicacion.getObjetoACambiar(),
                 publicacion.getFechaPublicacion(),
                 publicacion.getUsuario() != null ? publicacion.getUsuario().getUsername() : null,
-                publicacion.tieneImagen() ? Base64.getEncoder().encodeToString(publicacion.getImagen()) : null,
-                publicacion.getImagenContentType(),
+                imagenes,
+                principal,
                 publicacion.getEstado(),
                 publicacion.isOficial(),
                 publicacion.getFechaReserva(),

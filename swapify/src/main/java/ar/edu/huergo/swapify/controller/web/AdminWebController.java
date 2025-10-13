@@ -1,5 +1,6 @@
 package ar.edu.huergo.swapify.controller.web;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,82 +45,75 @@ public class AdminWebController {
 
     @GetMapping
     public String panel(Model model) {
-        List<Usuario> usuarios = usuarioService.getAllUsuarios().stream()
-                .sorted(Comparator.comparing(Usuario::getUsername))
-                .toList();
-        List<Publicacion> publicaciones = publicacionService.listarTodas();
-
-        Map<Long, String> rolesPorUsuario = new LinkedHashMap<>();
-        for (Usuario usuario : usuarios) {
-            Long usuarioId = usuario.getId();
-            if (usuarioId == null) {
-                continue;
-            }
-            String roles = (usuario.getRoles() == null || usuario.getRoles().isEmpty())
-                    ? "Sin roles"
-                    : usuario.getRoles().stream()
-                            .map(Rol::getNombre)
-                            .filter(nombre -> nombre != null && !nombre.isBlank())
-                            .sorted(String.CASE_INSENSITIVE_ORDER)
-                            .collect(Collectors.joining(", "));
-            rolesPorUsuario.put(usuarioId, roles);
-        }
-
-        Map<Long, Long> publicacionesPorUsuario = publicaciones.stream()
-                .filter(p -> p.getUsuario() != null && p.getUsuario().getId() != null)
-                .collect(Collectors.groupingBy(p -> p.getUsuario().getId(), Collectors.counting()));
-
-        model.addAttribute("usuarios", usuarios);
-        model.addAttribute("publicaciones", publicaciones);
-        model.addAttribute("publicacionesPorUsuario", publicacionesPorUsuario);
-        model.addAttribute("rolesPorUsuario", rolesPorUsuario);
+        model.addAttribute("usuarios", List.of());
+        model.addAttribute("publicaciones", List.of());
+        model.addAttribute("publicacionesPorUsuario", Map.of());
+        model.addAttribute("rolesPorUsuario", Map.of());
+        model.addAttribute("passwordPolicy", PasswordValidator.getValidationMessage());
         model.addAttribute("resumenPublicaciones", Map.of(
-                "total", Long.valueOf(publicaciones.size()),
-                "activas", publicaciones.stream().filter(Publicacion::estaActiva).count(),
-                "enNegociacion", publicaciones.stream().filter(Publicacion::estaEnNegociacion).count(),
-                "finalizadas", publicaciones.stream().filter(Publicacion::estaFinalizada).count(),
-                "oficiales", publicaciones.stream().filter(Publicacion::isOficial).count()
+                "total", 0L,
+                "activas", 0L,
+                "enNegociacion", 0L,
+                "finalizadas", 0L,
+                "oficiales", 0L
         ));
         model.addAttribute("resumenOfertas", Map.of(
-                "total", ofertaService.contarTotal(),
-                "pendientes", ofertaService.contarPorEstado(EstadoOferta.PENDIENTE),
-                "aceptadas", ofertaService.contarPorEstado(EstadoOferta.ACEPTADA),
-                "rechazadas", ofertaService.contarPorEstado(EstadoOferta.RECHAZADA)
+                "total", 0L,
+                "pendientes", 0L,
+                "aceptadas", 0L,
+                "rechazadas", 0L
         ));
-        model.addAttribute("passwordPolicy", PasswordValidator.getValidationMessage());
+        model.addAttribute("panelCargaError", false);
+
+        try {
+            List<Usuario> usuarios = usuarioService.getAllUsuarios().stream()
+                    .sorted(Comparator.comparing(Usuario::getUsername, Comparator.nullsLast(String::compareToIgnoreCase)))
+                    .toList();
+            List<Publicacion> publicaciones = publicacionService.listarTodas();
+
+            Map<Long, String> rolesPorUsuario = new LinkedHashMap<>();
+            for (Usuario usuario : usuarios) {
+                Long usuarioId = usuario.getId();
+                if (usuarioId == null) {
+                    continue;
+                }
+                String roles = (usuario.getRoles() == null || usuario.getRoles().isEmpty())
+                        ? "Sin roles"
+                        : usuario.getRoles().stream()
+                                .map(Rol::getNombre)
+                                .filter(nombre -> nombre != null && !nombre.isBlank())
+                                .map(String::trim)
+                                .sorted(String.CASE_INSENSITIVE_ORDER)
+                                .collect(Collectors.joining(", "));
+                rolesPorUsuario.put(usuarioId, roles);
+            }
+
+            Map<Long, Long> publicacionesPorUsuario = publicaciones.stream()
+                    .filter(p -> p.getUsuario() != null && p.getUsuario().getId() != null)
+                    .collect(Collectors.groupingBy(p -> p.getUsuario().getId(), Collectors.counting()));
+
+            model.addAttribute("usuarios", usuarios);
+            model.addAttribute("publicaciones", publicaciones);
+            model.addAttribute("publicacionesPorUsuario", publicacionesPorUsuario);
+            model.addAttribute("rolesPorUsuario", rolesPorUsuario);
+            model.addAttribute("resumenPublicaciones", Map.of(
+                    "total", Long.valueOf(publicaciones.size()),
+                    "activas", publicaciones.stream().filter(Publicacion::estaActiva).count(),
+                    "enNegociacion", publicaciones.stream().filter(Publicacion::estaEnNegociacion).count(),
+                    "finalizadas", publicaciones.stream().filter(Publicacion::estaFinalizada).count(),
+                    "oficiales", publicaciones.stream().filter(Publicacion::isOficial).count()
+            ));
+            model.addAttribute("resumenOfertas", Map.of(
+                    "total", ofertaService.contarTotal(),
+                    "pendientes", ofertaService.contarPorEstado(EstadoOferta.PENDIENTE),
+                    "aceptadas", ofertaService.contarPorEstado(EstadoOferta.ACEPTADA),
+                    "rechazadas", ofertaService.contarPorEstado(EstadoOferta.RECHAZADA)
+            ));
+        } catch (Exception e) {
+            log.error("No se pudo cargar el panel administrativo", e);
+            model.addAttribute("panelCargaError", true);
+        }
         return "admin/panel";
-    }
-
-    @PostMapping("/usuarios/{id}/actualizar-email")
-    public String actualizarEmail(@PathVariable("id") Long id,
-                                  @RequestParam("email") String email,
-                                  RedirectAttributes ra) {
-        try {
-            Usuario usuario = usuarioService.actualizarEmail(id, email);
-            ra.addFlashAttribute("success", "Se actualizó el email de " + usuario.getUsername());
-        } catch (EntityNotFoundException | IllegalArgumentException e) {
-            ra.addFlashAttribute("error", e.getMessage());
-        } catch (Exception e) {
-            log.error("No se pudo actualizar el email del usuario {}", id, e);
-            ra.addFlashAttribute("error", "No pudimos actualizar el email: " + e.getMessage());
-        }
-        return "redirect:/web/admin";
-    }
-
-    @PostMapping("/usuarios/{id}/restablecer-password")
-    public String restablecerPassword(@PathVariable("id") Long id,
-                                      @RequestParam("password") String password,
-                                      RedirectAttributes ra) {
-        try {
-            usuarioService.restablecerPassword(id, password);
-            ra.addFlashAttribute("success", "Se restableció la contraseña del usuario seleccionado");
-        } catch (EntityNotFoundException | IllegalArgumentException e) {
-            ra.addFlashAttribute("error", e.getMessage());
-        } catch (Exception e) {
-            log.error("No se pudo restablecer la contraseña del usuario {}", id, e);
-            ra.addFlashAttribute("error", "No pudimos restablecer la contraseña: " + e.getMessage());
-        }
-        return "redirect:/web/admin";
     }
 
     @PostMapping("/usuarios/{id}/eliminar")
@@ -140,6 +134,50 @@ public class AdminWebController {
         } catch (Exception e) {
             log.error("No se pudo eliminar el usuario {}", id, e);
             ra.addFlashAttribute("error", "No pudimos eliminar la cuenta: " + e.getMessage());
+        }
+        return "redirect:/web/admin";
+    }
+
+    @PostMapping("/usuarios/{id}/banear")
+    public String banearUsuario(@PathVariable("id") Long id,
+                                @RequestParam("dias") Integer dias,
+                                @RequestParam(value = "motivo", required = false) String motivo,
+                                RedirectAttributes ra) {
+        try {
+            if (dias == null || dias <= 0) {
+                ra.addFlashAttribute("error", "Indicá la cantidad de días de suspensión");
+                return "redirect:/web/admin";
+            }
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            Usuario usuario = usuarioService.buscarPorId(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+            if (auth != null && !(auth instanceof AnonymousAuthenticationToken)
+                    && auth.getName() != null && auth.getName().equalsIgnoreCase(usuario.getUsername())) {
+                ra.addFlashAttribute("error", "No podés suspender tu propia cuenta");
+                return "redirect:/web/admin";
+            }
+            LocalDateTime hasta = LocalDateTime.now().plusDays(dias.longValue());
+            usuarioService.banearUsuario(id, hasta, motivo);
+            ra.addFlashAttribute("success", "La cuenta quedará suspendida hasta " + hasta.toLocalDate());
+        } catch (EntityNotFoundException | IllegalArgumentException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            log.error("No se pudo banear al usuario {}", id, e);
+            ra.addFlashAttribute("error", "No pudimos suspender la cuenta: " + e.getMessage());
+        }
+        return "redirect:/web/admin";
+    }
+
+    @PostMapping("/usuarios/{id}/levantar-ban")
+    public String levantarBan(@PathVariable("id") Long id, RedirectAttributes ra) {
+        try {
+            usuarioService.levantarBan(id);
+            ra.addFlashAttribute("success", "Se rehabilitó la cuenta seleccionada");
+        } catch (EntityNotFoundException | IllegalArgumentException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            log.error("No se pudo rehabilitar al usuario {}", id, e);
+            ra.addFlashAttribute("error", "No pudimos rehabilitar la cuenta: " + e.getMessage());
         }
         return "redirect:/web/admin";
     }

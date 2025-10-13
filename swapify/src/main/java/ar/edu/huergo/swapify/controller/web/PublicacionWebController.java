@@ -50,6 +50,7 @@ public class PublicacionWebController {
         model.addAttribute("titulo", "Publicaciones");
         model.addAttribute("misPublicaciones", false);
         model.addAttribute("requiereLogin", false);
+        model.addAttribute("consulta", null);
         return "publicaciones/lista";
     }
 
@@ -58,12 +59,15 @@ public class PublicacionWebController {
      * página de inicio.
      */
     @GetMapping("/publicaciones")
-    public String listar(Model model) {
-        List<Publicacion> publicaciones = publicacionService.listarDisponibles();
+    public String listar(@RequestParam(value = "q", required = false) String consulta, Model model) {
+        List<Publicacion> publicaciones = (consulta != null && !consulta.isBlank())
+                ? publicacionService.buscarDisponibles(consulta)
+                : publicacionService.listarDisponibles();
         model.addAttribute("publicaciones", publicaciones);
         model.addAttribute("titulo", "Publicaciones");
         model.addAttribute("misPublicaciones", false);
         model.addAttribute("requiereLogin", false);
+        model.addAttribute("consulta", consulta);
         return "publicaciones/lista";
     }
 
@@ -78,6 +82,7 @@ public class PublicacionWebController {
             model.addAttribute("titulo", "Mis publicaciones");
             model.addAttribute("misPublicaciones", true);
             model.addAttribute("requiereLogin", true);
+            model.addAttribute("consulta", null);
             return "publicaciones/lista";
         }
 
@@ -87,6 +92,7 @@ public class PublicacionWebController {
             model.addAttribute("titulo", "Mis publicaciones");
             model.addAttribute("misPublicaciones", true);
             model.addAttribute("requiereLogin", false);
+            model.addAttribute("consulta", null);
         } catch (Exception e) {
             log.error("Error al listar las publicaciones del usuario {}", auth.getName(), e);
             model.addAttribute("publicaciones", List.of());
@@ -94,6 +100,7 @@ public class PublicacionWebController {
             model.addAttribute("misPublicaciones", true);
             model.addAttribute("requiereLogin", false);
             model.addAttribute("error", "No pudimos cargar tus publicaciones en este momento. Intentá nuevamente más tarde.");
+            model.addAttribute("consulta", null);
         }
         return "publicaciones/lista";
     }
@@ -395,7 +402,9 @@ public class PublicacionWebController {
      * Elimina una publicación del usuario autenticado.
      */
     @PostMapping("/publicaciones/{id}/eliminar")
-    public String eliminar(@PathVariable("id") Long id, RedirectAttributes ra) {
+    public String eliminar(@PathVariable("id") Long id,
+                           @RequestParam(value = "redirect", required = false) String redirect,
+                           RedirectAttributes ra) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
             ra.addFlashAttribute("error", "Necesitás iniciar sesión para eliminar una publicación");
@@ -413,6 +422,15 @@ public class PublicacionWebController {
             ra.addFlashAttribute("error", e.getMessage());
         } catch (Exception e) {
             ra.addFlashAttribute("error", "No pudimos eliminar la publicación: " + e.getMessage());
+        }
+        if (redirect != null) {
+            String destino = redirect.trim().toLowerCase(java.util.Locale.ROOT);
+            return switch (destino) {
+                case "admin" -> "redirect:/web/admin";
+                case "catalogo", "detalle" -> "redirect:/web/publicaciones";
+                case "mis" -> "redirect:/web/publicaciones/mias";
+                default -> "redirect:/web/publicaciones/mias";
+            };
         }
         return "redirect:/web/publicaciones/mias";
     }

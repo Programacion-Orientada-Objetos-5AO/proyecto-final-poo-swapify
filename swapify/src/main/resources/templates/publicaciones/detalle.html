@@ -40,13 +40,32 @@
               <p class="text-body-secondary mb-0" th:text="${publicacion.descripcion}">Descripción</p>
             </div>
             <div class="publication-media"
-                 th:if="${publicacion.imagenDataUri != null}"
-                 th:classappend="${estado == 'EN_NEGOCIACION'} ? ' reserved' : ''">
-              <img class="publication-media__img"
-                   th:src="${publicacion.imagenDataUri}"
-                   th:alt="${'Imagen de ' + publicacion.nombre}">
+                 th:if="${!#lists.isEmpty(publicacion.imagenesOrdenadas)}"
+                 th:classappend="${estado == 'EN_NEGOCIACION'} ? ' reserved' : ''"
+                 th:with="carouselId=${'galeriaPublicacion-' + publicacion.id}">
+              <div class="carousel slide" th:attr="id=${carouselId}" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                  <div class="carousel-item"
+                       th:each="imagen, iter : ${publicacion.imagenesOrdenadas}"
+                       th:classappend="${iter.index == 0} ? ' active' : ''">
+                    <img class="d-block w-100 publication-media__img"
+                         th:src="${imagen.dataUri}"
+                         th:alt="${'Imagen ' + (iter.index + 1) + ' de ' + publicacion.nombre}">
+                  </div>
+                </div>
+                <button class="carousel-control-prev" type="button" th:attr="data-bs-target='#' + ${carouselId}" data-bs-slide="prev"
+                        th:if="${#lists.size(publicacion.imagenesOrdenadas) > 1}">
+                  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                  <span class="visually-hidden">Anterior</span>
+                </button>
+                <button class="carousel-control-next" type="button" th:attr="data-bs-target='#' + ${carouselId}" data-bs-slide="next"
+                        th:if="${#lists.size(publicacion.imagenesOrdenadas) > 1}">
+                  <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                  <span class="visually-hidden">Siguiente</span>
+                </button>
+              </div>
             </div>
-            <div class="publication-media placeholder" th:if="${publicacion.imagenDataUri == null}">
+            <div class="publication-media placeholder" th:if="${#lists.isEmpty(publicacion.imagenesOrdenadas)}">
               <div class="placeholder-inner">
                 <i class="bi bi-image"></i>
                 <p class="mb-0">El autor aún no cargó una imagen para este artículo.</p>
@@ -164,6 +183,25 @@
                 </button>
               </form>
             </div>
+            <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3"
+                 role="alert"
+                 th:if="${esPropietario or esAdmin}">
+              <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                <div>
+                  <h3 class="h6 fw-semibold mb-1">Eliminar publicación</h3>
+                  <p class="mb-0">Esta acción quitará la publicación, sus imágenes y ofertas asociadas de forma permanente.</p>
+                </div>
+              </div>
+              <form th:action="@{/web/publicaciones/{id}/eliminar(id=${publicacion.id})}" method="post"
+                    onsubmit="return confirm('¿Seguro que querés eliminar esta publicación?')">
+                <input type="hidden" name="redirect"
+                       th:value="${esAdmin and !esPropietario} ? 'admin' : 'mis'"/>
+                <button type="submit" class="btn btn-danger btn-icon">
+                  <i class="bi bi-trash"></i> Eliminar definitivamente
+                </button>
+              </form>
+            </div>
           </div>
         </div>
         <div id="ofertas" class="card mt-4 detail-offers">
@@ -180,7 +218,7 @@
 
             <div class="offer-form" sec:authorize="isAuthenticated()" th:if="${puedeOfertar}">
               <h4 class="h6 fw-semibold mb-3">Proponer intercambio</h4>
-              <form th:action="@{/web/publicaciones/{id}/ofertas(id=${publicacion.id})}" method="post" class="vstack gap-3" th:object="${nuevaOferta}">
+              <form th:action="@{/web/publicaciones/{id}/ofertas(id=${publicacion.id})}" method="post" class="vstack gap-3" th:object="${nuevaOferta}" enctype="multipart/form-data">
                 <div>
                   <label class="form-label">¿Qué ofrecés a cambio? *</label>
                   <textarea class="form-control" rows="3" th:field="*{mensaje}" placeholder="Describí tu propuesta" required></textarea>
@@ -188,6 +226,11 @@
                 <div>
                   <label class="form-label">Objeto propuesto (opcional)</label>
                   <input type="text" class="form-control" th:field="*{propuestaObjeto}" placeholder="Ej: Consola Nintendo Switch">
+                </div>
+                <div>
+                  <label class="form-label">Imagen de referencia (opcional)</label>
+                  <input type="file" class="form-control" th:field="*{imagenArchivo}" accept="image/*">
+                  <div class="form-text">Adjuntá una foto del artículo que ofrecés para sumar confianza.</div>
                 </div>
                 <div class="d-flex gap-2">
                   <button type="submit" class="btn btn-success btn-icon"><i class="bi bi-send"></i> Enviar oferta</button>
@@ -228,6 +271,9 @@
                   </div>
                 </div>
                 <p class="mt-3 mb-0" th:text="${oferta.mensaje}">Mensaje</p>
+                <div class="mt-3" th:if="${oferta.imagenDataUri != null}">
+                  <img class="rounded shadow-sm w-100" th:src="${oferta.imagenDataUri}" th:alt="${'Imagen de la oferta de ' + (oferta.usuario != null ? oferta.usuario.username : 'usuario')}" loading="lazy">
+                </div>
                 <div class="mt-3" th:if="${oferta.estado == estadoAceptada && oferta.fechaRespuesta != null}">
                   <small class="text-success-emphasis d-block">Confirmada el <span th:text="${#temporals.format(oferta.fechaRespuesta,'dd/MM/yyyy HH:mm')}">fecha</span></small>
                 </div>

@@ -1,5 +1,6 @@
 package ar.edu.huergo.swapify.service.security;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -8,10 +9,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
 import ar.edu.huergo.swapify.entity.security.Rol;
 import ar.edu.huergo.swapify.entity.security.Usuario;
+import ar.edu.huergo.swapify.repository.publicacion.OfertaRepository;
+import ar.edu.huergo.swapify.repository.publicacion.PublicacionRepository;
+import ar.edu.huergo.swapify.repository.security.NotificacionRepository;
 import ar.edu.huergo.swapify.repository.security.RolRepository;
 import ar.edu.huergo.swapify.repository.security.UsuarioRepository;
+import ar.edu.huergo.swapify.service.security.NotificacionService;
 import ar.edu.huergo.swapify.util.PasswordValidator;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +28,10 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final RolRepository rolRepository;
+    private final OfertaRepository ofertaRepository;
+    private final PublicacionRepository publicacionRepository;
+    private final NotificacionRepository notificacionRepository;
+    private final NotificacionService notificacionService;
 
     @Transactional(readOnly = true)
     public List<Usuario> getAllUsuarios() {
@@ -54,35 +64,73 @@ public class UsuarioService {
     }
 
     @Transactional
-    public Usuario actualizarEmail(Long usuarioId, String nuevoEmail) {
-        if (nuevoEmail == null || nuevoEmail.isBlank()) {
-            throw new IllegalArgumentException("El email no puede estar vacío");
-        }
-        String emailNormalizado = normalizarEmail(nuevoEmail);
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-        if (usuarioRepository.existsByUsernameIgnoreCase(emailNormalizado)
-                && !emailNormalizado.equalsIgnoreCase(usuario.getUsername())) {
-            throw new IllegalArgumentException("El email indicado ya está en uso");
-        }
-        usuario.setUsername(emailNormalizado);
-        return usuario;
-    }
-
-    @Transactional
-    public void restablecerPassword(Long usuarioId, String nuevaPassword) {
-        PasswordValidator.validate(nuevaPassword);
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-        usuario.setPassword(passwordEncoder.encode(nuevaPassword));
-    }
-
-    @Transactional
     public void eliminarUsuario(Long usuarioId) {
-        if (!usuarioRepository.existsById(usuarioId)) {
-            throw new EntityNotFoundException("Usuario no encontrado");
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+
+        if (usuario.esAdministrador()) {
+            throw new IllegalArgumentException("No se pueden eliminar cuentas administrativas desde este panel");
         }
-        usuarioRepository.deleteById(usuarioId);
+
+        ofertaRepository.deleteByUsuarioId(usuarioId);
+
+        List<Publicacion> publicaciones = publicacionRepository.findByUsuarioId(usuarioId);
+        for (Publicacion publicacion : publicaciones) {
+            if (publicacion.getId() != null) {
+                ofertaRepository.deleteByPublicacionId(publicacion.getId());
+            }
+        }
+        ofertaRepository.flush();
+
+        if (!publicaciones.isEmpty()) {
+            publicacionRepository.deleteAll(publicaciones);
+            publicacionRepository.flush();
+        }
+
+        notificacionRepository.deleteByUsuarioId(usuarioId);
+        notificacionRepository.flush();
+
+        usuarioRepository.delete(usuario);
+    }
+
+    @Transactional
+    public Usuario banearUsuario(Long usuarioId, LocalDateTime hasta, String motivo) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+        if (usuario.esAdministrador()) {
+            throw new IllegalArgumentException("No se pueden suspender cuentas administrativas");
+        }
+        usuario.setBaneadoHasta(hasta);
+        usuario.setMotivoBan(motivo);
+        notificacionService.notificarBan(usuario, hasta, motivo);
+        return usuarioRepository.saveAndFlush(usuario);
+    }
+
+    @Transactional
+    public Usuario levantarBan(Long usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+        usuario.setBaneadoHasta(null);
+        usuario.setMotivoBan(null);
+        notificacionService.notificarBan(usuario, null, null);
+        return usuarioRepository.saveAndFlush(usuario);
+    }
+
+    @Transactional
+    public void cambiarPasswordPropia(String username, String actual, String nueva, String confirmacion) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("Usuario inválido");
+        }
+        if (nueva == null || confirmacion == null || !nueva.equals(confirmacion)) {
+            throw new IllegalArgumentException("Las contraseñas nuevas no coinciden");
+        }
+        PasswordValidator.validate(nueva);
+        Usuario usuario = usuarioRepository.findByUsernameIgnoreCase(normalizarEmail(username))
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+        if (actual == null || !passwordEncoder.matches(actual, usuario.getPassword())) {
+            throw new IllegalArgumentException("La contraseña actual no es válida");
+        }
+        usuario.setPassword(passwordEncoder.encode(nueva));
     }
 
     private String normalizarEmail(String email) {

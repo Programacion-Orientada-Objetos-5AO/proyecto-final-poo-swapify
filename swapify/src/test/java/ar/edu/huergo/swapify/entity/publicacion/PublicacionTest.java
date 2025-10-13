@@ -1,15 +1,14 @@
 package ar.edu.huergo.swapify.entity.publicacion;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import ar.edu.huergo.swapify.entity.security.Usuario;
@@ -25,9 +24,11 @@ public class PublicacionTest {
         publicacion.setDescripcion("Libro de programación");
         publicacion.setObjetoACambiar("Otro libro");
         publicacion.setFechaPublicacion(LocalDateTime.of(2023, 1, 1, 12, 0));
-        byte[] imagen = new byte[] {1, 2, 3};
-        publicacion.setImagen(imagen);
-        publicacion.setImagenContentType("image/png");
+
+        PublicacionImagen imagen = new PublicacionImagen();
+        imagen.setDatos(new byte[] {1, 2, 3});
+        imagen.setContentType("image/png");
+        publicacion.agregarImagen(imagen);
 
         assertEquals(1L, publicacion.getId());
         assertEquals("Libro", publicacion.getNombre());
@@ -35,20 +36,23 @@ public class PublicacionTest {
         assertEquals("Libro de programación", publicacion.getDescripcion());
         assertEquals("Otro libro", publicacion.getObjetoACambiar());
         assertEquals(LocalDateTime.of(2023, 1, 1, 12, 0), publicacion.getFechaPublicacion());
-        assertArrayEquals(imagen, publicacion.getImagen());
-        assertNotSame(imagen, publicacion.getImagen());
-        assertEquals("image/png", publicacion.getImagenContentType());
-        assertTrue(publicacion.tieneImagen());
+        assertTrue(publicacion.tieneImagenes());
+        assertEquals(1, publicacion.getImagenesOrdenadas().size());
+        PublicacionImagen primera = publicacion.getImagenesOrdenadas().get(0);
+        assertEquals("image/png", primera.getContentType());
+        assertEquals(0, primera.getOrden());
+        assertEquals(publicacion, primera.getPublicacion());
     }
 
     @Test
     public void testAllArgsConstructor() {
         LocalDateTime fecha = LocalDateTime.of(2023, 2, 2, 15, 30);
         Usuario usuario = new Usuario("test@example.com", "password");
-        byte[] imagen = new byte[] {9, 8, 7};
-        String contentType = "image/jpeg";
+        PublicacionImagen imagen = new PublicacionImagen();
+        imagen.setDatos(new byte[] {9, 8, 7});
+        imagen.setContentType("image/jpeg");
         Publicacion publicacion = new Publicacion(2L, "Mesa", new BigDecimal("200.00"),
-                "Mesa de madera", "Silla", fecha, usuario, imagen, contentType, null, null);
+                "Mesa de madera", "Silla", fecha, usuario, List.of(imagen), null, null);
 
         assertEquals(2L, publicacion.getId());
         assertEquals("Mesa", publicacion.getNombre());
@@ -57,9 +61,12 @@ public class PublicacionTest {
         assertEquals("Silla", publicacion.getObjetoACambiar());
         assertEquals(fecha, publicacion.getFechaPublicacion());
         assertEquals(usuario, publicacion.getUsuario());
-        assertArrayEquals(imagen, publicacion.getImagen());
-        assertNotSame(imagen, publicacion.getImagen());
-        assertEquals(contentType, publicacion.getImagenContentType());
+        assertTrue(publicacion.tieneImagenes());
+        PublicacionImagen principal = publicacion.getImagenPrincipal();
+        assertNotNull(principal);
+        assertEquals("image/jpeg", principal.getContentType());
+        assertEquals(0, principal.getOrden());
+        assertEquals(publicacion, principal.getPublicacion());
     }
 
     @Test
@@ -86,15 +93,16 @@ public class PublicacionTest {
     }
 
     @Test
-    public void testLimpiarImagen() {
+    public void testLimpiarImagenes() {
         Publicacion publicacion = new Publicacion();
-        publicacion.setImagen(new byte[] {4, 5, 6});
-        publicacion.setImagenContentType("image/png");
+        PublicacionImagen imagen = new PublicacionImagen();
+        imagen.setDatos(new byte[] {4, 5, 6});
+        imagen.setContentType("image/png");
+        publicacion.agregarImagen(imagen);
 
-        publicacion.limpiarImagen();
+        publicacion.limpiarImagenes();
 
-        assertNull(publicacion.getImagen());
-        assertNull(publicacion.getImagenContentType());
-        assertFalse(publicacion.tieneImagen());
+        assertFalse(publicacion.tieneImagenes());
+        assertEquals(0, publicacion.getImagenesOrdenadas().size());
     }
 }

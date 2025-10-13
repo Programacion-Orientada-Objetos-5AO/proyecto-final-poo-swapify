@@ -4,9 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ar.edu.huergo.swapify.dto.publicacion.CrearPublicacionDTO;
+import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
+import ar.edu.huergo.swapify.entity.publicacion.PublicacionImagen;
+import ar.edu.huergo.swapify.entity.security.Usuario;
+import ar.edu.huergo.swapify.mapper.publicacion.PublicacionMapper;
+import ar.edu.huergo.swapify.repository.publicacion.PublicacionRepository;
+import jakarta.persistence.EntityNotFoundException;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -21,22 +29,14 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-
 import javax.imageio.ImageIO;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import ar.edu.huergo.swapify.dto.publicacion.CrearPublicacionDTO;
-import ar.edu.huergo.swapify.entity.publicacion.Publicacion;
-import ar.edu.huergo.swapify.entity.security.Usuario;
-import ar.edu.huergo.swapify.mapper.publicacion.PublicacionMapper;
-import ar.edu.huergo.swapify.repository.publicacion.PublicacionRepository;
-import jakarta.persistence.EntityNotFoundException;
+import org.springframework.security.access.AccessDeniedException;
 
 @ExtendWith(MockitoExtension.class)
 public class PublicacionServiceTest {
@@ -50,43 +50,40 @@ public class PublicacionServiceTest {
     @Mock
     private ar.edu.huergo.swapify.repository.security.UsuarioRepository usuarioRepository;
 
+    @Mock
+    private ar.edu.huergo.swapify.repository.publicacion.OfertaRepository ofertaRepository;
+
     @InjectMocks
     private PublicacionService publicacionService;
 
     @Test
     public void testCrearPublicacion_Success() {
-        // Given
-        CrearPublicacionDTO dto = new CrearPublicacionDTO();
-        dto.setNombre("Libro");
-        dto.setPrecio(new BigDecimal("100.00"));
-        dto.setDescripcion("Libro de programación");
-        dto.setObjetoACambiar("Otro libro");
-        dto.setImagenContentType("image/png");
-        dto.setImagenBase64("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/AcAAn8B9pEJcwAAAABJRU5ErkJggg==");
+        CrearPublicacionDTO dto = crearDtoBasico();
+        dto.getImagenesContentType().add("image/png");
+        dto.getImagenesBase64().add("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/AcAAn8B9pEJcwAAAABJRU5ErkJggg==");
 
         Usuario usuario = new Usuario("test@example.com", "password");
         Publicacion publicacion = new Publicacion(null, "Libro", new BigDecimal("100.00"),
-                "Libro de programación", "Otro libro", LocalDateTime.now(), usuario, null, null, null, null);
+                "Libro de programación", "Otro libro", LocalDateTime.now(), usuario, List.of(), null, null);
 
-        when(usuarioRepository.findByUsername(usuario.getUsername())).thenReturn(java.util.Optional.of(usuario));
+        when(usuarioRepository.findByUsername(usuario.getUsername())).thenReturn(Optional.of(usuario));
         when(publicacionMapper.toEntity(dto)).thenReturn(publicacion);
-        when(publicacionRepository.save(publicacion)).thenReturn(publicacion);
+        when(publicacionRepository.save(any(Publicacion.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // When
         Publicacion result = publicacionService.crearPublicacion(dto, usuario);
 
-        // Then
-        assertEquals(publicacion, result);
+        assertThat(result.tieneImagenes()).isTrue();
+        assertThat(result.getImagenesOrdenadas()).hasSize(1);
+        PublicacionImagen imagen = result.getImagenesOrdenadas().get(0);
+        assertThat(imagen.getDatos()).isNotEmpty();
+        assertThat(imagen.getContentType()).isEqualTo("image/png");
+        assertThat(imagen.getDataUri()).startsWith("data:image/png;base64,");
         verify(publicacionRepository).save(publicacion);
     }
 
     @Test
     public void testCrearPublicacion_SinImagenLanzaExcepcion() {
-        CrearPublicacionDTO dto = new CrearPublicacionDTO();
-        dto.setNombre("Libro");
-        dto.setPrecio(new BigDecimal("100.00"));
-        dto.setDescripcion("Libro de programación");
-        dto.setObjetoACambiar("Otro libro");
+        CrearPublicacionDTO dto = crearDtoBasico();
 
         Usuario usuario = new Usuario("test@example.com", "password");
         Publicacion publicacion = new Publicacion();
@@ -97,18 +94,14 @@ public class PublicacionServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> publicacionService.crearPublicacion(dto, usuario));
 
-        assertThat(exception.getMessage()).isEqualTo("La imagen es obligatoria");
+        assertThat(exception.getMessage()).isEqualTo("Debés adjuntar al menos una imagen");
     }
 
     @Test
     public void testCrearPublicacion_Base64Invalido() {
-        CrearPublicacionDTO dto = new CrearPublicacionDTO();
-        dto.setNombre("Libro");
-        dto.setPrecio(new BigDecimal("100.00"));
-        dto.setDescripcion("Libro de programación");
-        dto.setObjetoACambiar("Otro libro");
-        dto.setImagenContentType("image/png");
-        dto.setImagenBase64("no_es_base64");
+        CrearPublicacionDTO dto = crearDtoBasico();
+        dto.getImagenesContentType().add("image/png");
+        dto.getImagenesBase64().add("no_es_base64");
 
         Usuario usuario = new Usuario("test@example.com", "password");
         Publicacion publicacion = new Publicacion();
@@ -119,101 +112,89 @@ public class PublicacionServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> publicacionService.crearPublicacion(dto, usuario));
 
-        assertThat(exception.getMessage()).isEqualTo("La imagen está dañada o tiene un formato inválido");
+        assertThat(exception.getMessage()).containsIgnoringCase("base64");
     }
 
     @Test
     public void testCrearPublicacion_DtoNull() {
-        // Given
         Usuario usuario = new Usuario("test@example.com", "password");
 
-        // When & Then
         assertThrows(IllegalArgumentException.class, () -> publicacionService.crearPublicacion(null, usuario));
     }
 
     @Test
     public void testListarTodas() {
-        // Given
         Usuario usuario = new Usuario("test@example.com", "password");
         Publicacion pub1 = new Publicacion(null, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1",
-                LocalDateTime.now(), usuario, null, null, null, null);
+                LocalDateTime.now(), usuario, List.of(), null, null);
         Publicacion pub2 = new Publicacion(null, "Libro2", new BigDecimal("200.00"), "Desc2", "Obj2",
-                LocalDateTime.now(), usuario, null, null, null, null);
+                LocalDateTime.now(), usuario, List.of(), null, null);
         List<Publicacion> publicaciones = Arrays.asList(pub1, pub2);
 
         when(publicacionRepository.findAllByOrderByFechaPublicacionDesc()).thenReturn(publicaciones);
 
-        // When
         List<Publicacion> result = publicacionService.listarTodas();
 
-        // Then
         assertEquals(publicaciones, result);
     }
 
     @Test
     public void testListarTodas_PopulaDataUriParaImagenes() {
         Usuario usuario = new Usuario("test@example.com", "password");
-        byte[] imagen = new byte[] {1, 2, 3, 4};
+        PublicacionImagen imagen = new PublicacionImagen();
+        imagen.setDatos(new byte[] {1, 2, 3, 4});
+        imagen.setContentType("image/png");
         Publicacion pub = new Publicacion(1L, "Libro", BigDecimal.TEN, "Desc", "Obj",
-                LocalDateTime.now(), usuario, imagen, "image/png", null, null);
+                LocalDateTime.now(), usuario, List.of(imagen), null, null);
 
         when(publicacionRepository.findAllByOrderByFechaPublicacionDesc()).thenReturn(List.of(pub));
 
         List<Publicacion> result = publicacionService.listarTodas();
 
-        assertThat(result.get(0).getImagenBase64()).isNotBlank();
-        assertThat(result.get(0).getImagenDataUri())
-                .startsWith("data:image/png;base64,");
+        PublicacionImagen procesada = result.get(0).getImagenesOrdenadas().get(0);
+        assertThat(procesada.getBase64()).isNotBlank();
+        assertThat(procesada.getDataUri()).startsWith("data:image/png;base64,");
     }
 
     @Test
     public void testObtenerPorId_Success() {
-        // Given
         Usuario usuario = new Usuario("test@example.com", "password");
         Publicacion publicacion = new Publicacion(null, "Libro", new BigDecimal("100.00"), "Desc", "Obj",
-                LocalDateTime.now(), usuario, null, null, null, null);
+                LocalDateTime.now(), usuario, List.of(), null, null);
         when(publicacionRepository.findById(1L)).thenReturn(Optional.of(publicacion));
 
-        // When
         Publicacion result = publicacionService.obtenerPorId(1L);
 
-        // Then
         assertEquals(publicacion, result);
     }
 
     @Test
     public void testObtenerPorId_NotFound() {
-        // Given
         when(publicacionRepository.findById(1L)).thenReturn(Optional.empty());
 
-        // When & Then
         assertThrows(EntityNotFoundException.class, () -> publicacionService.obtenerPorId(1L));
     }
 
     @Test
     public void testObtenerPublicacionesDeFecha() {
-        // Given
         LocalDate fecha = LocalDate.of(2023, 1, 1);
         LocalDateTime inicio = fecha.atStartOfDay();
         LocalDateTime fin = fecha.atTime(LocalTime.MAX);
 
         Usuario usuario = new Usuario("test@example.com", "password");
         Publicacion pub1 = new Publicacion(1L, "Libro1", new BigDecimal("100.00"), "Desc1", "Obj1",
-                inicio.plusHours(1), usuario, null, null, null, null);
+                inicio.plusHours(1), usuario, List.of(), null, null);
         List<Publicacion> publicaciones = Arrays.asList(pub1);
 
         when(publicacionRepository.findByFechaPublicacionBetween(inicio, fin)).thenReturn(publicaciones);
 
-        // When
         List<Publicacion> result = publicacionService.obtenerPublicacionesDeFecha(fecha);
 
-        // Then
         assertEquals(publicaciones, result);
     }
 
     @Test
     public void testSumaPreciosEnFecha() {
-        // Given
         LocalDate fecha = LocalDate.of(2023, 1, 1);
         LocalDateTime inicio = fecha.atStartOfDay();
         LocalDateTime fin = fecha.atTime(LocalTime.MAX);
@@ -222,38 +203,83 @@ public class PublicacionServiceTest {
 
         when(publicacionRepository.sumaPreciosEntre(inicio, fin)).thenReturn(suma);
 
-        // When
         BigDecimal result = publicacionService.sumaPreciosEnFecha(fecha);
 
-        // Then
         assertEquals(suma, result);
     }
 
     @Test
+    public void testEliminarPublicacionPropietario() {
+        Usuario propietario = new Usuario("propietario@example.com", "secret");
+        Publicacion publicacion = new Publicacion(10L, "Libro", BigDecimal.TEN, "Desc", "Obj",
+                LocalDateTime.now(), propietario, List.of(), null, null);
+
+        when(publicacionRepository.findById(10L)).thenReturn(Optional.of(publicacion));
+
+        publicacionService.eliminarPublicacion(10L, "propietario@example.com", false);
+
+        verify(ofertaRepository).deleteByPublicacionId(10L);
+        verify(publicacionRepository).delete(publicacion);
+    }
+
+    @Test
+    public void testEliminarPublicacionAdmin() {
+        Usuario propietario = new Usuario("propietario@example.com", "secret");
+        Publicacion publicacion = new Publicacion(11L, "Libro", BigDecimal.TEN, "Desc", "Obj",
+                LocalDateTime.now(), propietario, List.of(), null, null);
+
+        when(publicacionRepository.findById(11L)).thenReturn(Optional.of(publicacion));
+
+        publicacionService.eliminarPublicacion(11L, "admin@example.com", true);
+
+        verify(ofertaRepository).deleteByPublicacionId(11L);
+        verify(publicacionRepository).delete(publicacion);
+    }
+
+    @Test
+    public void testEliminarPublicacionSinPermiso() {
+        Usuario propietario = new Usuario("propietario@example.com", "secret");
+        Publicacion publicacion = new Publicacion(12L, "Libro", BigDecimal.TEN, "Desc", "Obj",
+                LocalDateTime.now(), propietario, List.of(), null, null);
+
+        when(publicacionRepository.findById(12L)).thenReturn(Optional.of(publicacion));
+
+        assertThrows(AccessDeniedException.class,
+                () -> publicacionService.eliminarPublicacion(12L, "otro@example.com", false));
+
+        verify(ofertaRepository, never()).deleteByPublicacionId(12L);
+        verify(publicacionRepository, never()).delete(publicacion);
+    }
+
+    @Test
+    public void testEliminarPublicacionNoEncontrada() {
+        when(publicacionRepository.findById(13L)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> publicacionService.eliminarPublicacion(13L, "usuario@example.com", false));
+
+        verify(ofertaRepository, never()).deleteByPublicacionId(13L);
+        verify(publicacionRepository, never()).delete(any(Publicacion.class));
+    }
+
+    @Test
     public void testSumaPreciosEnFecha_Null() {
-        // Given
         LocalDate fecha = LocalDate.of(2023, 1, 1);
         LocalDateTime inicio = fecha.atStartOfDay();
         LocalDateTime fin = fecha.atTime(LocalTime.MAX);
 
         when(publicacionRepository.sumaPreciosEntre(inicio, fin)).thenReturn(null);
 
-        // When
         BigDecimal result = publicacionService.sumaPreciosEnFecha(fecha);
 
-        // Then
         assertEquals(BigDecimal.ZERO, result);
     }
 
     @Test
     public void testCrearPublicacion_DecodeBase64ConSaltosDeLinea() {
-        CrearPublicacionDTO dto = new CrearPublicacionDTO();
-        dto.setNombre("Bicicleta");
-        dto.setPrecio(new BigDecimal("250.00"));
-        dto.setDescripcion("Rodado 29 casi nueva");
-        dto.setObjetoACambiar("Notebook");
-        dto.setImagenContentType("image/png");
-        dto.setImagenBase64("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/AcA\nAn8B9pEJcwAAAABJRU5ErkJggg==");
+        CrearPublicacionDTO dto = crearDtoBasico();
+        dto.getImagenesContentType().add("image/png");
+        dto.getImagenesBase64().add("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/AcA\nAn8B9pEJcwAAAABJRU5ErkJggg==");
 
         Usuario usuario = new Usuario("usuario@test.com", "secreta");
         Publicacion entidad = new Publicacion();
@@ -268,21 +294,17 @@ public class PublicacionServiceTest {
 
         Publicacion resultado = publicacionService.crearPublicacion(dto, usuario);
 
-        assertThat(resultado.getImagen()).isNotNull();
-        assertThat(resultado.getImagen().length).isGreaterThan(0);
-        assertEquals("image/png", resultado.getImagenContentType());
+        PublicacionImagen imagen = resultado.getImagenesOrdenadas().get(0);
+        assertThat(imagen.getDatos()).isNotEmpty();
+        assertThat(imagen.getContentType()).isEqualTo("image/png");
+        assertThat(imagen.getDataUri()).startsWith("data:image/png;base64,");
     }
 
     @Test
     public void testCrearPublicacion_DecodeBase64ConEspaciosComoMas() {
-        CrearPublicacionDTO dto = new CrearPublicacionDTO();
-        dto.setNombre("Cámara");
-        dto.setPrecio(new BigDecimal("999.99"));
-        dto.setDescripcion("Incluye lente 50mm");
-        dto.setObjetoACambiar("Tablet");
-        dto.setImagenContentType("image/jpeg");
-        dto.setImagenBase64("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQgICAwKCQwLCw4RDRYPDxkZGhkZGSclHSoqKi4xNDQ0NTw8Pj84QkFCQkJFRUVFRkpKSkpKSkpK/2wBDAQ0NDhIRERgVFRgqHCAoKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqK//AABEIAAEAAgMBIgACEQEDEQH/xAAXAAADAQAAAAAAAAAAAAAAAAAAAAUG/8QAFhABAQEAAAAAAAAAAAAAAAAAABEB/8QAFQEBAQAAAAAAAAAAAAAAAAAAAgT/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwD9AQ//2Q=="
-                .replace('+', ' '));
+        CrearPublicacionDTO dto = crearDtoBasico();
+        dto.getImagenesContentType().add("image/jpeg");
+        dto.getImagenesBase64().add("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQgICAwKCQwLCw4RDRYPDxkZGhkZGSclHSoqKi4xNDQ0NTw8Pj84QkFCQkJFRUVFRkpKSkpKSkpK/2wBDAQ0NDhIRERgVFRgqHCAoKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqKCoqK//AABEIAAEAAgMBIgACEQEDEQH/xAAXAAADAQAAAAAAAAAAAAAAAAAAAAUG/8QAFhABAQEAAAAAAAAAAAAAAAAAABEB/8QAFQEBAQAAAAAAAAAAAAAAAAAAAgT/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwD9AQ//2Q==".replace('+', ' '));
 
         Usuario usuario = new Usuario("espacios@test.com", "secreta");
         Publicacion entidad = new Publicacion();
@@ -297,20 +319,17 @@ public class PublicacionServiceTest {
 
         Publicacion resultado = publicacionService.crearPublicacion(dto, usuario);
 
-        assertThat(resultado.getImagen()).isNotNull();
-        assertThat(resultado.getImagen().length).isGreaterThan(0);
-        assertEquals("image/jpeg", resultado.getImagenContentType());
+        PublicacionImagen imagen = resultado.getImagenesOrdenadas().get(0);
+        assertThat(imagen.getDatos()).isNotEmpty();
+        assertThat(imagen.getContentType()).isEqualTo("image/jpeg");
+        assertThat(imagen.getDataUri()).startsWith("data:image/jpeg;base64,");
     }
 
     @Test
     public void testCrearPublicacion_ComprimeImagenGrande() throws Exception {
-        CrearPublicacionDTO dto = new CrearPublicacionDTO();
-        dto.setNombre("Cuadro");
-        dto.setPrecio(new BigDecimal("1200.00"));
-        dto.setDescripcion("Pintura artística en lienzo");
-        dto.setObjetoACambiar("Bicicleta");
-        dto.setImagenContentType("image/png");
-        dto.setImagenBase64(generarImagenAleatoriaBase64(3000));
+        CrearPublicacionDTO dto = crearDtoBasico();
+        dto.getImagenesContentType().add("image/png");
+        dto.getImagenesBase64().add(generarImagenAleatoriaBase64(3000));
 
         Usuario usuario = new Usuario("grande@test.com", "secreta");
         Publicacion entidad = new Publicacion();
@@ -325,21 +344,17 @@ public class PublicacionServiceTest {
 
         Publicacion resultado = publicacionService.crearPublicacion(dto, usuario);
 
-        assertThat(resultado.getImagen()).isNotNull();
-        assertThat(resultado.getImagen().length).isGreaterThan(0);
-        assertThat(resultado.getImagen().length).isLessThanOrEqualTo(5_000_000);
-        assertEquals("image/png", resultado.getImagenContentType());
+        PublicacionImagen imagen = resultado.getImagenesOrdenadas().get(0);
+        assertThat(imagen.getDatos()).isNotEmpty();
+        assertThat(imagen.getDatos().length).isLessThanOrEqualTo(5_000_000);
+        assertThat(imagen.getContentType()).isEqualTo("image/png");
     }
 
     @Test
     void testCrearPublicacion_LanzaErrorAmigableCuandoNoHayMemoria() {
-        CrearPublicacionDTO dto = new CrearPublicacionDTO();
-        dto.setNombre("Poster gigante");
-        dto.setPrecio(new BigDecimal("500.00"));
-        dto.setDescripcion("Imagen enorme");
-        dto.setObjetoACambiar("Auto");
-        dto.setImagenContentType("image/png");
-        dto.setImagenBase64("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/AcAAn8B9pEJcwAAAABJRU5ErkJggg==");
+        CrearPublicacionDTO dto = crearDtoBasico();
+        dto.getImagenesContentType().add("image/png");
+        dto.getImagenesBase64().add("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/AcAAn8B9pEJcwAAAABJRU5ErkJggg==");
 
         Usuario usuario = new Usuario("sin-memoria@test.com", "clave");
         Publicacion entidad = new Publicacion();
@@ -357,6 +372,15 @@ public class PublicacionServiceTest {
             assertThat(ex.getMessage())
                     .isEqualTo("La imagen es demasiado grande para procesarla. Reducila e intentá nuevamente.");
         }
+    }
+
+    private CrearPublicacionDTO crearDtoBasico() {
+        CrearPublicacionDTO dto = new CrearPublicacionDTO();
+        dto.setNombre("Libro");
+        dto.setPrecio(new BigDecimal("100.00"));
+        dto.setDescripcion("Libro de programación");
+        dto.setObjetoACambiar("Otro libro");
+        return dto;
     }
 
     private String generarImagenAleatoriaBase64(int dimension) throws Exception {

@@ -4,6 +4,11 @@
 <body>
 <div th:replace="~{base :: layout('Panel de administración', ~{::section})}">
   <section class="admin-panel">
+    <div class="alert alert-warning alert-dismissible fade show" role="alert" th:if="${panelCargaError}">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      No pudimos actualizar todas las métricas del panel. Los datos mostrados pueden estar incompletos, intentá nuevamente en unos segundos.
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
     <div class="admin-section-title">
       <div>
         <h1 class="display-6 fw-bold mb-1">Panel de administración</h1>
@@ -63,17 +68,31 @@
               <td class="text-center" th:text="${publicacionesPorUsuario.containsKey(usuario.id) ? publicacionesPorUsuario[usuario.id] : 0}">0</td>
               <td>
                 <div class="admin-actions">
-                  <form th:action="@{/web/admin/usuarios/{id}/actualizar-email(id=${usuario.id})}" method="post">
-                    <input type="email" name="email" th:value="${usuario.username}" required>
-                    <button type="submit" class="btn btn-outline-primary btn-sm">Actualizar email</button>
-                  </form>
-                  <form th:action="@{/web/admin/usuarios/{id}/restablecer-password(id=${usuario.id})}" method="post">
-                    <input type="password" name="password" placeholder="Nueva contraseña" required>
-                    <button type="submit" class="btn btn-outline-success btn-sm">Restablecer clave</button>
-                  </form>
-                  <form th:action="@{/web/admin/usuarios/{id}/eliminar(id=${usuario.id})}" method="post" onsubmit="return confirm('¿Seguro que querés eliminar esta cuenta?');">
-                    <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
-                  </form>
+                  <div class="mb-2">
+                    <span class="badge"
+                          th:classappend="${usuario.estaBaneado()} ? ' text-bg-danger' : ' text-bg-success'"
+                          th:text="${usuario.estaBaneado()} ? |Suspendida hasta ${#temporals.format(usuario.baneadoHasta, 'dd/MM/yyyy HH:mm')}| : 'Cuenta activa'">
+                      Estado
+                    </span>
+                    <small class="d-block text-body-secondary" th:if="${usuario.estaBaneado() && usuario.motivoBan != null}">Motivo: <span th:text="${usuario.motivoBan}">motivo</span></small>
+                  </div>
+                  <div th:if="${usuario.esAdministrador()}">
+                    <span class="badge text-bg-primary"><i class="bi bi-shield-lock me-1"></i> Cuenta administrativa</span>
+                    <small class="d-block text-body-secondary mt-1">Estas cuentas no pueden suspenderse ni eliminarse.</small>
+                  </div>
+                  <div th:if="${!usuario.esAdministrador()}" class="d-flex flex-column gap-2">
+                    <form th:action="@{/web/admin/usuarios/{id}/banear(id=${usuario.id})}" method="post" class="d-flex flex-wrap gap-2 align-items-center">
+                      <input type="number" class="form-control form-control-sm" name="dias" min="1" placeholder="Días" required>
+                      <input type="text" class="form-control form-control-sm" name="motivo" placeholder="Motivo (opcional)">
+                      <button type="submit" class="btn btn-outline-warning btn-sm">Suspender</button>
+                    </form>
+                    <form th:if="${usuario.estaBaneado()}" th:action="@{/web/admin/usuarios/{id}/levantar-ban(id=${usuario.id})}" method="post">
+                      <button type="submit" class="btn btn-outline-success btn-sm">Levantar suspensión</button>
+                    </form>
+                    <form th:action="@{/web/admin/usuarios/{id}/eliminar(id=${usuario.id})}" method="post" onsubmit="return confirm('¿Seguro que querés eliminar esta cuenta?');">
+                      <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+                    </form>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -146,6 +165,13 @@
                     <input type="hidden" name="valor" th:value="${!publicacion.oficial}"/>
                     <button type="submit" class="btn btn-outline-warning btn-sm"
                             th:text="${publicacion.oficial} ? 'Quitar oficial' : 'Marcar oficial'"></button>
+                  </form>
+                  <form th:action="@{/web/publicaciones/{id}/eliminar(id=${publicacion.id})}" method="post"
+                        onsubmit="return confirm('¿Seguro que querés eliminar esta publicación?');">
+                    <input type="hidden" name="redirect" value="admin"/>
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                      <i class="bi bi-trash"></i> Eliminar
+                    </button>
                   </form>
                 </div>
               </td>

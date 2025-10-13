@@ -11,6 +11,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -124,6 +125,9 @@ public class AuthWebController {
 
             ra.addFlashAttribute("success", "Sesión iniciada correctamente");
             return "redirect:/web/publicaciones";
+        } catch (DisabledException e) {
+            ra.addFlashAttribute("error", "Tu cuenta está suspendida temporalmente. Revisá tus notificaciones.");
+            return "redirect:/web/login";
         } catch (Exception e) {
             ra.addFlashAttribute("error", "Credenciales inválidas");
             return "redirect:/web/login";
@@ -161,6 +165,8 @@ public class AuthWebController {
             return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(Map.of("token", token));
+        } catch (DisabledException e) {
+            return ResponseEntity.status(423).body(Map.of("error", "Tu cuenta está suspendida temporalmente"));
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", "Credenciales inválidas"));
         }

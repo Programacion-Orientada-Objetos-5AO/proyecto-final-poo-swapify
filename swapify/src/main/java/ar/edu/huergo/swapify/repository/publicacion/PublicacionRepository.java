@@ -29,4 +29,7 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
     List<Publicacion> findByUsuarioUsernameOrderByFechaPublicacionDesc(String username);
 
     List<Publicacion> findAllByOrderByFechaPublicacionDesc();
+
+    List<Publicacion> findDistinctByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCaseOrObjetoACambiarContainingIgnoreCase(
+            String nombre, String descripcion, String objetoACambiar);
 }

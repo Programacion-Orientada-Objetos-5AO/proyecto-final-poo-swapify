@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -131,12 +132,16 @@ public class SecurityConfig {
     @Bean
     UserDetailsService userDetailsService(UsuarioRepository usuarioRepository) {
         return username -> usuarioRepository.findByUsernameIgnoreCase(username)
-            .map(usuario -> org.springframework.security.core.userdetails.User
-                .withUsername(usuario.getUsername())
-                .password(usuario.getPassword())
-                .roles(usuario.getRoles().stream().map(r -> r.getNombre()).toArray(String[]::new))
-                .build()
-            )
+            .map(usuario -> {
+                if (usuario.estaBaneado()) {
+                    throw new DisabledException("Cuenta suspendida hasta " + usuario.getBaneadoHasta());
+                }
+                return org.springframework.security.core.userdetails.User
+                        .withUsername(usuario.getUsername())
+                        .password(usuario.getPassword())
+                        .roles(usuario.getRoles().stream().map(r -> r.getNombre()).toArray(String[]::new))
+                        .build();
+            })
             .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
     }
 

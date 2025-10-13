@@ -2,6 +2,7 @@ package ar.edu.huergo.swapify.service.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -22,8 +24,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import ar.edu.huergo.swapify.entity.security.Rol;
 import ar.edu.huergo.swapify.entity.security.Usuario;
+import ar.edu.huergo.swapify.repository.publicacion.OfertaRepository;
+import ar.edu.huergo.swapify.repository.publicacion.PublicacionRepository;
+import ar.edu.huergo.swapify.repository.security.NotificacionRepository;
 import ar.edu.huergo.swapify.repository.security.RolRepository;
 import ar.edu.huergo.swapify.repository.security.UsuarioRepository;
+import ar.edu.huergo.swapify.service.security.NotificacionService;
 
 /**
  * Tests de unidad para UsuarioService
@@ -45,11 +51,25 @@ class UsuarioServiceTest {
     @Mock
     private RolRepository rolRepository;
 
+    @Mock
+    private OfertaRepository ofertaRepository;
+
+    @Mock
+    private PublicacionRepository publicacionRepository;
+
+    @Mock
+    private NotificacionRepository notificacionRepository;
+
+    @Mock
+    private NotificacionService notificacionService;
+
     @InjectMocks
     private UsuarioService usuarioService;
 
     private Usuario usuarioEjemplo;
+    private Usuario adminEjemplo;
     private Rol rolCliente;
+    private Rol rolAdmin;
 
     @BeforeEach
     void setUp() {
@@ -57,10 +77,19 @@ class UsuarioServiceTest {
         usuarioEjemplo.setId(1L);
         usuarioEjemplo.setUsername("usuario@test.com");
         usuarioEjemplo.setPassword("password123");
-
         rolCliente = new Rol();
         rolCliente.setId(1L);
         rolCliente.setNombre("CLIENTE");
+        usuarioEjemplo.getRoles().add(rolCliente);
+
+        adminEjemplo = new Usuario();
+        adminEjemplo.setId(2L);
+        adminEjemplo.setUsername("admin@test.com");
+        adminEjemplo.setPassword("password123");
+        rolAdmin = new Rol();
+        rolAdmin.setId(2L);
+        rolAdmin.setNombre("ADMIN");
+        adminEjemplo.getRoles().add(rolAdmin);
     }
 
     @Test
@@ -88,7 +117,7 @@ class UsuarioServiceTest {
         String verificacionPassword = "password123";
         String passwordEncriptado = "encrypted_password";
 
-        when(usuarioRepository.existsByUsername(usuarioEjemplo.getUsername())).thenReturn(false);
+        when(usuarioRepository.existsByUsernameIgnoreCase(usuarioEjemplo.getUsername())).thenReturn(false);
         when(passwordEncoder.encode(password)).thenReturn(passwordEncriptado);
         when(rolRepository.findByNombre("CLIENTE")).thenReturn(Optional.of(rolCliente));
         when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuarioEjemplo);
@@ -99,7 +128,7 @@ class UsuarioServiceTest {
 
         // Then
         assertNotNull(resultado);
-        verify(usuarioRepository, times(1)).existsByUsername(usuarioEjemplo.getUsername());
+        verify(usuarioRepository, times(1)).existsByUsernameIgnoreCase(usuarioEjemplo.getUsername());
         verify(passwordEncoder, times(1)).encode(password);
         verify(rolRepository, times(1)).findByNombre("CLIENTE");
         verify(usuarioRepository, times(1)).save(usuarioEjemplo);
@@ -124,7 +153,7 @@ class UsuarioServiceTest {
         assertEquals("Las contraseñas no coinciden", excepcion.getMessage());
 
         // Verificar que no se realizaron operaciones adicionales
-        verify(usuarioRepository, never()).existsByUsername(any());
+        verify(usuarioRepository, never()).existsByUsernameIgnoreCase(any());
         verify(passwordEncoder, never()).encode(any());
         verify(usuarioRepository, never()).save(any());
     }
@@ -136,7 +165,7 @@ class UsuarioServiceTest {
         String password = "password123";
         String verificacionPassword = "password123";
 
-        when(usuarioRepository.existsByUsername(usuarioEjemplo.getUsername())).thenReturn(true);
+        when(usuarioRepository.existsByUsernameIgnoreCase(usuarioEjemplo.getUsername())).thenReturn(true);
 
         // When & Then
         IllegalArgumentException excepcion = assertThrows(IllegalArgumentException.class,
@@ -145,7 +174,7 @@ class UsuarioServiceTest {
         assertEquals("El nombre de usuario ya está en uso", excepcion.getMessage());
 
         // Verificar que se verificó la existencia pero no se continuó
-        verify(usuarioRepository, times(1)).existsByUsername(usuarioEjemplo.getUsername());
+        verify(usuarioRepository, times(1)).existsByUsernameIgnoreCase(usuarioEjemplo.getUsername());
         verify(passwordEncoder, never()).encode(any());
         verify(usuarioRepository, never()).save(any());
     }
@@ -157,7 +186,7 @@ class UsuarioServiceTest {
         String password = "password123";
         String verificacionPassword = "password123";
 
-        when(usuarioRepository.existsByUsername(usuarioEjemplo.getUsername())).thenReturn(false);
+        when(usuarioRepository.existsByUsernameIgnoreCase(usuarioEjemplo.getUsername())).thenReturn(false);
         when(passwordEncoder.encode(password)).thenReturn("encrypted_password");
         when(rolRepository.findByNombre("CLIENTE")).thenReturn(Optional.empty());
 
@@ -168,7 +197,7 @@ class UsuarioServiceTest {
         assertEquals("Rol 'CLIENTE' no encontrado", excepcion.getMessage());
 
         // Verificar que se realizaron las verificaciones previas
-        verify(usuarioRepository, times(1)).existsByUsername(usuarioEjemplo.getUsername());
+        verify(usuarioRepository, times(1)).existsByUsernameIgnoreCase(usuarioEjemplo.getUsername());
         verify(passwordEncoder, times(1)).encode(password);
         verify(rolRepository, times(1)).findByNombre("CLIENTE");
         verify(usuarioRepository, never()).save(any());
@@ -202,5 +231,76 @@ class UsuarioServiceTest {
                         .registrar(usuarioEjemplo, passwordNull, verificacionPasswordNull));
 
         assertEquals("Las contraseñas no pueden ser null", excepcion.getMessage());
+    }
+
+    @Test
+    @DisplayName("Debería suspender a un usuario cliente y persistir la sanción")
+    void deberiaSuspenderUsuarioCliente() {
+        // Given
+        LocalDateTime hasta = LocalDateTime.now().plusDays(3);
+        String motivo = "Incumplimiento de normas";
+        when(usuarioRepository.findById(usuarioEjemplo.getId())).thenReturn(Optional.of(usuarioEjemplo));
+        when(usuarioRepository.saveAndFlush(usuarioEjemplo)).thenReturn(usuarioEjemplo);
+
+        // When
+        Usuario resultado = usuarioService.banearUsuario(usuarioEjemplo.getId(), hasta, motivo);
+
+        // Then
+        assertNotNull(resultado);
+        assertEquals(hasta, usuarioEjemplo.getBaneadoHasta());
+        assertEquals(motivo, usuarioEjemplo.getMotivoBan());
+        verify(usuarioRepository, times(1)).saveAndFlush(usuarioEjemplo);
+        verify(notificacionService, times(1)).notificarBan(usuarioEjemplo, hasta, motivo);
+    }
+
+    @Test
+    @DisplayName("No debería permitir suspender cuentas administrativas")
+    void noDeberiaSuspenderCuentaAdministrativa() {
+        // Given
+        LocalDateTime hasta = LocalDateTime.now().plusDays(1);
+        when(usuarioRepository.findById(adminEjemplo.getId())).thenReturn(Optional.of(adminEjemplo));
+
+        // When & Then
+        IllegalArgumentException excepcion = assertThrows(IllegalArgumentException.class,
+                () -> usuarioService.banearUsuario(adminEjemplo.getId(), hasta, "Prueba"));
+
+        assertEquals("No se pueden suspender cuentas administrativas", excepcion.getMessage());
+        verify(usuarioRepository, never()).saveAndFlush(any());
+        verify(notificacionService, never()).notificarBan(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Debería levantar la suspensión y limpiar el estado")
+    void deberiaLevantarSuspension() {
+        // Given
+        usuarioEjemplo.setBaneadoHasta(LocalDateTime.now().plusDays(2));
+        usuarioEjemplo.setMotivoBan("Motivo previo");
+        when(usuarioRepository.findById(usuarioEjemplo.getId())).thenReturn(Optional.of(usuarioEjemplo));
+        when(usuarioRepository.saveAndFlush(usuarioEjemplo)).thenReturn(usuarioEjemplo);
+
+        // When
+        Usuario resultado = usuarioService.levantarBan(usuarioEjemplo.getId());
+
+        // Then
+        assertNotNull(resultado);
+        assertNull(usuarioEjemplo.getBaneadoHasta());
+        assertNull(usuarioEjemplo.getMotivoBan());
+        verify(usuarioRepository, times(1)).saveAndFlush(usuarioEjemplo);
+        verify(notificacionService, times(1)).notificarBan(usuarioEjemplo, null, null);
+    }
+
+    @Test
+    @DisplayName("No debería permitir eliminar cuentas administrativas")
+    void noDeberiaEliminarCuentaAdministrativa() {
+        // Given
+        when(usuarioRepository.findById(adminEjemplo.getId())).thenReturn(Optional.of(adminEjemplo));
+
+        // When & Then
+        IllegalArgumentException excepcion = assertThrows(IllegalArgumentException.class,
+                () -> usuarioService.eliminarUsuario(adminEjemplo.getId()));
+
+        assertEquals("No se pueden eliminar cuentas administrativas desde este panel", excepcion.getMessage());
+        verify(ofertaRepository, never()).deleteByUsuarioId(any());
+        verify(usuarioRepository, never()).delete(any());
     }
 }
