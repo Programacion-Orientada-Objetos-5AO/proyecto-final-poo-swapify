@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.imageio.IIOImage;
@@ -49,6 +50,8 @@ public class PublicacionService {
 
     private static final int MAX_IMAGE_DIMENSION = 1280;
     private static final long MAX_IMAGE_BYTES = 5_000_000L;
+    private static final Pattern BASE64_WHITESPACE = Pattern.compile("\\s+");
+    private static final Pattern BASE64_ALLOWED = Pattern.compile("^[A-Za-z0-9+/]*={0,2}$");
 
     private final PublicacionRepository publicacionRepository;
     private final OfertaRepository ofertaRepository;
@@ -305,7 +308,8 @@ public class PublicacionService {
         try {
             BufferedImage original = leerImagen(bytes);
             if (original == null) {
-                throw new IllegalArgumentException("La imagen está dañada o tiene un formato inválido");
+                log.warn("No se reconoce el formato de la imagen, se almacenará sin procesar");
+                return crearImagenSinProcesar(originales, tipoNormalizado, orden);
             }
 
             ImagenProcesada procesada = optimizarImagen(bytes, tipoNormalizado, original);
@@ -322,20 +326,13 @@ public class PublicacionService {
             log.error("Sin memoria para procesar la imagen ({} bytes)", bytes != null ? bytes.length : -1, e);
             throw new IllegalArgumentException("La imagen es demasiado grande para procesarla. Reducila e intentá nuevamente.");
         } catch (IOException e) {
-            throw new IllegalArgumentException("La imagen está dañada o tiene un formato inválido", e);
+            log.warn("No se pudo procesar la imagen, se almacenará sin optimización", e);
+            return crearImagenSinProcesar(originales, tipoNormalizado, orden);
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
             log.warn("No se pudo optimizar la imagen, se almacenará el archivo original", e);
-            byte[] copia = originales != null ? originales.clone() : null;
-            if (copia != null && copia.length > MAX_IMAGE_BYTES) {
-                throw new IllegalArgumentException("La imagen supera el tamaño máximo permitido (5 MB)");
-            }
-            PublicacionImagen imagen = new PublicacionImagen();
-            imagen.setOrden(orden);
-            imagen.setDatos(copia);
-            imagen.setContentType(tipoNormalizado);
-            return imagen;
+            return crearImagenSinProcesar(originales, tipoNormalizado, orden);
         }
     }
 
@@ -384,23 +381,21 @@ public class PublicacionService {
             return new byte[0];
         }
 
-        StringBuilder limpio = new StringBuilder(base64Data.length());
-        for (int i = 0; i < base64Data.length(); i++) {
-            char c = base64Data.charAt(i);
-            if (c == ' ') {
-                limpio.append('+');
-                continue;
-            }
-            if (!Character.isWhitespace(c)) {
-                limpio.append(c);
-            }
-        }
+        String normalizado = base64Data.replace(' ', '+');
+        String limpio = BASE64_WHITESPACE.matcher(normalizado).replaceAll("");
 
-        if (limpio.length() == 0) {
+        if (limpio.isEmpty()) {
             return new byte[0];
         }
 
-        return Base64.getMimeDecoder().decode(limpio.toString());
+        try {
+            if (!BASE64_ALLOWED.matcher(limpio).matches()) {
+                throw new IllegalArgumentException("Los datos de la imagen no están en formato Base64 válido");
+            }
+            return Base64.getMimeDecoder().decode(limpio);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Los datos de la imagen no están en formato Base64 válido", e);
+        }
     }
 
     /**
@@ -567,6 +562,20 @@ public class PublicacionService {
         try (ByteArrayInputStream input = new ByteArrayInputStream(data)) {
             return ImageIO.read(input);
         }
+    }
+
+    private PublicacionImagen crearImagenSinProcesar(byte[] datosOriginales, String contentType, int orden) {
+        if (datosOriginales == null || datosOriginales.length == 0) {
+            throw new IllegalArgumentException("La imagen es obligatoria");
+        }
+        if (datosOriginales.length > MAX_IMAGE_BYTES) {
+            throw new IllegalArgumentException("La imagen supera el tamaño máximo permitido (5 MB)");
+        }
+        PublicacionImagen imagen = new PublicacionImagen();
+        imagen.setOrden(orden);
+        imagen.setDatos(datosOriginales.clone());
+        imagen.setContentType(contentType);
+        return imagen;
     }
 
     private String obtenerFormatoDesdeContentType(String contentType) {

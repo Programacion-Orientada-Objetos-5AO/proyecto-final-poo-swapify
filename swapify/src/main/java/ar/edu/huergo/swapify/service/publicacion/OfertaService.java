@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
@@ -33,6 +34,8 @@ import javax.imageio.ImageIO;
 public class OfertaService {
 
     private static final long MAX_IMAGE_BYTES = 3_000_000L;
+    private static final Pattern BASE64_WHITESPACE = Pattern.compile("\\s+");
+    private static final Pattern BASE64_ALLOWED = Pattern.compile("^[A-Za-z0-9+/]*={0,2}$");
 
     private final OfertaRepository ofertaRepository;
     private final PublicacionRepository publicacionRepository;
@@ -272,19 +275,19 @@ public class OfertaService {
         if (base64Data == null) {
             return new byte[0];
         }
-        StringBuilder limpio = new StringBuilder(base64Data.length());
-        for (int i = 0; i < base64Data.length(); i++) {
-            char c = base64Data.charAt(i);
-            if (c == ' ') {
-                limpio.append('+');
-            } else if (!Character.isWhitespace(c)) {
-                limpio.append(c);
-            }
-        }
-        if (limpio.length() == 0) {
+        String normalizado = base64Data.replace(' ', '+');
+        String limpio = BASE64_WHITESPACE.matcher(normalizado).replaceAll("");
+        if (limpio.isEmpty()) {
             return new byte[0];
         }
-        return Base64.getMimeDecoder().decode(limpio.toString());
+        if (!BASE64_ALLOWED.matcher(limpio).matches()) {
+            throw new IllegalArgumentException("Los datos de la imagen no están en formato Base64 válido");
+        }
+        try {
+            return Base64.getMimeDecoder().decode(limpio);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Los datos de la imagen no están en formato Base64 válido", e);
+        }
     }
 
     private void prepararOfertaParaLectura(Oferta oferta) {
