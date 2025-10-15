@@ -36,7 +36,7 @@ public class DataInitializer {
             asegurarUsuario(
                     "cliente@huergo.edu.ar",
                     "ClienteSeguro@123",
-                    "Cliente Demo",
+                    "Cliente ",
                     encoder,
                     usuarioRepository,
                     Set.of(cliente));
@@ -45,6 +45,7 @@ public class DataInitializer {
 
     private void asegurarUsuario(String username,
                                  String rawPassword,
+                                 String nombre,
                                  PasswordEncoder encoder,
                                  UsuarioRepository usuarioRepository,
                                  Set<Rol> rolesRequeridos) {
@@ -63,6 +64,10 @@ public class DataInitializer {
             if (usuario.getRoles() == null) {
                 usuario.setRoles(new HashSet<>());
             }
+        }
+
+        if (nombre != null && !nombre.isBlank()) {
+            usuario.setNombre(nombre.trim());
         }
 
         if (usuario.getRoles() == null || usuario.getRoles().isEmpty()) {
