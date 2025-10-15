@@ -143,7 +143,7 @@
               </td>
               <td>
                 <div class="d-flex flex-column">
-                  <span th:text="${publicacion.usuario != null ? publicacion.usuario.username : 'Swapify Oficial'}">usuario</span>
+                  <span th:text="${publicacion.usuario != null ? (publicacion.usuario.nombre != null ? publicacion.usuario.nombre : publicacion.usuario.username) : 'Swapify Oficial'}">usuario</span>
                   <small class="text-body-secondary" th:if="${publicacion.oficial}"><i class="bi bi-patch-check-fill text-success me-1"></i>Oficial</small>
                 </div>
               </td>

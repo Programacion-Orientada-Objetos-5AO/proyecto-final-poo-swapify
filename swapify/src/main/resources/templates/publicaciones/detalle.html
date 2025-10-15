@@ -99,7 +99,7 @@
                 <div>
                   <p class="fw-semibold mb-1">Publicado por</p>
                   <p class="mb-0 text-body-secondary">
-                    <span th:text="${publicacion.oficial ? 'Swapify Oficial' : (publicacion.usuario != null ? publicacion.usuario.username : publicacion.usuarioUsername)}">Usuario</span>
+                    <span th:text="${publicacion.oficial ? 'Swapify Oficial' : (publicacion.usuario != null ? (publicacion.usuario.nombre != null ? publicacion.usuario.nombre : publicacion.usuario.username) : publicacion.usuarioUsername)}">Usuario</span>
                     <span class="badge badge-oficial ms-2" th:if="${publicacion.oficial}">
                       <i class="bi bi-shield-lock-fill"></i> Oficial
                     </span>
@@ -111,19 +111,19 @@
               <h3 class="h5 fw-semibold mb-2"><i class="bi bi-people-fill text-success me-2"></i>Intercambio en coordinación</h3>
               <p class="mb-0" th:if="${puedeCoordinar}">
                 Ponete en contacto con
-                <strong th:text="${ofertaAceptada.usuario != null ? ofertaAceptada.usuario.username : 'la persona interesada'}">usuario</strong>
+                <strong th:text="${ofertaAceptada.usuario != null ? (ofertaAceptada.usuario.nombre != null ? ofertaAceptada.usuario.nombre : ofertaAceptada.usuario.username) : 'la persona interesada'}">usuario</strong>
                 para acordar el punto de encuentro y los detalles del intercambio.
               </p>
               <div class="coordination-card__contacts" th:if="${puedeCoordinar}">
                 <a class="btn btn-success btn-icon"
                    th:if="${ofertaAceptada.usuario != null}"
                    th:href="${'mailto:' + ofertaAceptada.usuario.username}">
-                  <i class="bi bi-envelope-fill"></i> Escribir a <span th:text="${ofertaAceptada.usuario.username}">usuario</span>
+                  <i class="bi bi-envelope-fill"></i> Escribir a <span th:text="${ofertaAceptada.usuario != null ? (ofertaAceptada.usuario.nombre != null ? ofertaAceptada.usuario.nombre : ofertaAceptada.usuario.username) : 'usuario'}">usuario</span>
                 </a>
                 <a class="btn btn-outline-light btn-icon"
                    th:if="${publicacion.usuario != null}"
                    th:href="${'mailto:' + publicacion.usuario.username}">
-                  <i class="bi bi-send"></i> Contactar a <span th:text="${publicacion.usuario.username}">propietario</span>
+                  <i class="bi bi-send"></i> Contactar a <span th:text="${publicacion.usuario != null ? (publicacion.usuario.nombre != null ? publicacion.usuario.nombre : publicacion.usuario.username) : 'propietario'}">propietario</span>
                 </a>
               </div>
               <p class="coordination-note mt-3" th:if="${!puedeCoordinar}">
@@ -258,7 +258,7 @@
               <div class="offer-card" th:each="oferta : ${ofertas}">
                 <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
                   <div>
-                    <p class="fw-semibold mb-1" th:text="${oferta.usuario != null ? oferta.usuario.username : 'Usuario Swapify'}">usuario</p>
+                    <p class="fw-semibold mb-1" th:text="${oferta.usuario != null ? (oferta.usuario.nombre != null ? oferta.usuario.nombre : oferta.usuario.username) : 'Usuario Swapify'}">usuario</p>
                     <p class="mb-0 text-body-secondary"
                        th:text="${oferta.fechaOferta != null ? #temporals.format(oferta.fechaOferta,'dd/MM/yyyy HH:mm') : 'Fecha no disponible'}">fecha</p>
                   </div>
@@ -272,7 +272,7 @@
                 </div>
                 <p class="mt-3 mb-0" th:text="${oferta.mensaje}">Mensaje</p>
                 <div class="mt-3" th:if="${oferta.imagenDataUri != null}">
-                  <img class="rounded shadow-sm w-100" th:src="${oferta.imagenDataUri}" th:alt="${'Imagen de la oferta de ' + (oferta.usuario != null ? oferta.usuario.username : 'usuario')}" loading="lazy">
+                  <img class="rounded shadow-sm w-100" th:src="${oferta.imagenDataUri}" th:alt="${'Imagen de la oferta de ' + (oferta.usuario != null ? (oferta.usuario.nombre != null ? oferta.usuario.nombre : oferta.usuario.username) : 'usuario')}" loading="lazy">
                 </div>
                 <div class="mt-3" th:if="${oferta.estado == estadoAceptada && oferta.fechaRespuesta != null}">
                   <small class="text-success-emphasis d-block">Confirmada el <span th:text="${#temporals.format(oferta.fechaRespuesta,'dd/MM/yyyy HH:mm')}">fecha</span></small>

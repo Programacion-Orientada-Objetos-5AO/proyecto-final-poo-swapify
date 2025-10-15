@@ -55,17 +55,24 @@
 
               <form th:action="@{/web/registro}" method="post" class="vstack gap-3">
                 <div>
-                  <label class="form-label">Email / usuario</label>
+                  <label class="form-label">Email</label>
                   <div class="input-group">
                     <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-at"></i></span>
                     <input name="username" type="email" class="form-control" placeholder="nombre@swapify.com" required>
                   </div>
                 </div>
                 <div>
+                  <label class="form-label">Nombre de usuario</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-person"></i></span>
+                    <input name="nombre" type="text" class="form-control" placeholder="Tu nombre visible" required>
+                  </div>
+                </div>
+                <div>
                   <label class="form-label">Contraseña</label>
                   <div class="input-group">
                     <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-lock"></i></span>
-                    <input name="password" type="password" class="form-control" placeholder="Mínimo 8 caracteres" required>
+                    <input name="password" type="password" class="form-control" placeholder="Mínimo 16 caracteres" required>
                   </div>
                 </div>
                 <div>

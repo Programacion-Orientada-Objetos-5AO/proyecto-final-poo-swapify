@@ -110,7 +110,7 @@
           <div class="offer-card" th:each="oferta : ${ofertas}">
             <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
               <div>
-                <p class="fw-semibold mb-1" th:text="${oferta.usuario != null ? oferta.usuario.username : 'Usuario Swapify'}">Usuario</p>
+                <p class="fw-semibold mb-1" th:text="${oferta.usuario != null ? (oferta.usuario.nombre != null ? oferta.usuario.nombre : oferta.usuario.username) : 'Usuario Swapify'}">Usuario</p>
                 <p class="mb-0 text-body-secondary"
                    th:text="${oferta.fechaOferta != null ? #temporals.format(oferta.fechaOferta,'dd/MM/yyyy HH:mm') : 'Fecha no disponible'}">Fecha</p>
               </div>
@@ -127,7 +127,7 @@
             </div>
             <p class="mt-3 mb-0" th:text="${oferta.mensaje}">Mensaje</p>
             <div class="mt-3" th:if="${oferta.imagenDataUri != null}">
-              <img class="rounded shadow-sm w-100" th:src="${oferta.imagenDataUri}" th:alt="${'Imagen de la oferta de ' + (oferta.usuario != null ? oferta.usuario.username : 'usuario')}" loading="lazy">
+              <img class="rounded shadow-sm w-100" th:src="${oferta.imagenDataUri}" th:alt="${'Imagen de la oferta de ' + (oferta.usuario != null ? (oferta.usuario.nombre != null ? oferta.usuario.nombre : oferta.usuario.username) : 'usuario')}" loading="lazy">
             </div>
             <div class="mt-3" th:if="${oferta.estado == estadoAceptada && oferta.fechaRespuesta != null}">
               <small class="text-success-emphasis d-block">Confirmada el <span th:text="${#temporals.format(oferta.fechaRespuesta,'dd/MM/yyyy HH:mm')}">fecha</span></small>

@@ -49,4 +49,23 @@ public class CuentaWebController {
         }
         return "redirect:/web/mi-cuenta/seguridad";
     }
+
+    @PostMapping("/seguridad/nombre")
+    public String cambiarNombre(@RequestParam("nombre") String nombre,
+                                RedirectAttributes ra) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof AnonymousAuthenticationToken || !auth.isAuthenticated()) {
+            ra.addFlashAttribute("error", "Necesitás iniciar sesión nuevamente");
+            return "redirect:/web/login";
+        }
+        try {
+            usuarioService.cambiarNombrePropio(auth.getName(), nombre);
+            ra.addFlashAttribute("success", "Actualizaste tu nombre de usuario correctamente");
+        } catch (IllegalArgumentException e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", "No pudimos actualizar el nombre: " + e.getMessage());
+        }
+        return "redirect:/web/mi-cuenta/seguridad";
+    }
 }

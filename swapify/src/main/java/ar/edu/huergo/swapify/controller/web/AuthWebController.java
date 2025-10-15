@@ -80,6 +80,7 @@ public class AuthWebController {
      */
     @PostMapping("/registro")
     public String registrar(@RequestParam String username,
+                           @RequestParam String nombre,
                            @RequestParam String password,
                            @RequestParam String verificacionPassword,
                            RedirectAttributes ra) {
@@ -91,6 +92,7 @@ public class AuthWebController {
 
             Usuario usuario = new Usuario();
             usuario.setUsername(normalizarEmail(username));
+            usuario.setNombre(nombre);
             usuarioService.registrar(usuario, password, verificacionPassword);
 
             ra.addFlashAttribute("success", "Cuenta creada exitosamente. Ahora puedes iniciar sesión.");

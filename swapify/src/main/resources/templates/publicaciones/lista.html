@@ -152,7 +152,7 @@
               </div>
               <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-person-circle text-primary"></i>
-                <span th:text="${p.oficial ? 'Swapify Oficial' : (p.usuario != null ? p.usuario.username : p.usuarioUsername)}">Usuario</span>
+                <span th:text="${p.oficial ? 'Swapify Oficial' : (p.usuario != null ? (p.usuario.nombre != null ? p.usuario.nombre : p.usuario.username) : p.usuarioUsername)}">Usuario</span>
                 <span class="badge badge-oficial" th:if="${p.oficial}">
                   <i class="bi bi-shield-lock-fill"></i> Oficial
                 </span>

@@ -37,9 +37,12 @@ public class Usuario {
     private Long id;
 
     @Column(nullable = false, unique = true, length = 100)
-    @Email(message = "El nombre de usuario debe ser un email válido")
-    @NotBlank(message = "El nombre de usuario es requerido")
+    @Email(message = "El email debe ser válido")
+    @NotBlank(message = "El email es requerido")
     private String username;
+
+    @Column(nullable = true, unique = true, length = 50)
+    private String nombre;
 
     @Column(nullable = false)
     @NotBlank(message = "La contraseña es requerida")

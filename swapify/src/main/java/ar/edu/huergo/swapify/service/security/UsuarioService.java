@@ -49,7 +49,14 @@ public class UsuarioService {
         String usernameNormalizado = normalizarEmail(usuario.getUsername());
         usuario.setUsername(usernameNormalizado);
         if (usuarioRepository.existsByUsernameIgnoreCase(usernameNormalizado)) {
-            throw new IllegalArgumentException("El nombre de usuario ya está en uso");
+            throw new IllegalArgumentException("El email ya está en uso");
+        }
+        if (usuario.getNombre() != null && !usuario.getNombre().trim().isEmpty()) {
+            String nombreNormalizado = usuario.getNombre().trim();
+            if (usuarioRepository.existsByNombreIgnoreCase(nombreNormalizado)) {
+                throw new IllegalArgumentException("El nombre de usuario ya está en uso");
+            }
+            usuario.setNombre(nombreNormalizado);
         }
 
         usuario.setPassword(passwordEncoder.encode(password));
@@ -131,6 +138,25 @@ public class UsuarioService {
             throw new IllegalArgumentException("La contraseña actual no es válida");
         }
         usuario.setPassword(passwordEncoder.encode(nueva));
+    }
+
+    @Transactional
+    public void cambiarNombrePropio(String username, String nombre) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("Usuario inválido");
+        }
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre no puede estar vacío");
+        }
+        Usuario usuario = usuarioRepository.findByUsernameIgnoreCase(normalizarEmail(username))
+                .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
+        String nombreNormalizado = nombre.trim();
+        if (usuarioRepository.existsByNombreIgnoreCase(nombreNormalizado) &&
+            !nombreNormalizado.equalsIgnoreCase(usuario.getNombre())) {
+            throw new IllegalArgumentException("El nombre de usuario ya está en uso");
+        }
+        usuario.setNombre(nombreNormalizado);
+        usuarioRepository.saveAndFlush(usuario);
     }
 
     private String normalizarEmail(String email) {

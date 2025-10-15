@@ -28,6 +28,7 @@ public class DataInitializer {
             asegurarUsuario(
                     "admin@huergo.edu.ar",
                     "AdminSuperSegura@123",
+                    "Administrador",
                     encoder,
                     usuarioRepository,
                     Set.of(admin, cliente));
@@ -35,6 +36,7 @@ public class DataInitializer {
             asegurarUsuario(
                     "cliente@huergo.edu.ar",
                     "ClienteSeguro@123",
+                    "Cliente Demo",
                     encoder,
                     usuarioRepository,
                     Set.of(cliente));
