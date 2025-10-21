@@ -171,7 +171,7 @@ class UsuarioServiceTest {
         IllegalArgumentException excepcion = assertThrows(IllegalArgumentException.class,
                 () -> usuarioService.registrar(usuarioEjemplo, password, verificacionPassword));
 
-        assertEquals("El nombre de usuario ya está en uso", excepcion.getMessage());
+        assertEquals("El email ya está en uso", excepcion.getMessage());
 
         // Verificar que se verificó la existencia pero no se continuó
         verify(usuarioRepository, times(1)).existsByUsernameIgnoreCase(usuarioEjemplo.getUsername());
