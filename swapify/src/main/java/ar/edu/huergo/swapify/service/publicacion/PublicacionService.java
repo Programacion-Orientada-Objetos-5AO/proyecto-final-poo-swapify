@@ -125,7 +125,7 @@ public class PublicacionService {
         }
         String termino = consulta.trim();
         List<Publicacion> encontradas = publicacionRepository
-                .findDistinctByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCaseOrObjetoACambiarContainingIgnoreCase(
+                .findDistinctByArticuloNombreContainingIgnoreCaseOrArticuloDescripcionContainingIgnoreCaseOrObjetoACambiarContainingIgnoreCase(
                         termino, termino, termino);
         encontradas.forEach(this::prepararPublicacionParaLectura);
         return encontradas.stream()

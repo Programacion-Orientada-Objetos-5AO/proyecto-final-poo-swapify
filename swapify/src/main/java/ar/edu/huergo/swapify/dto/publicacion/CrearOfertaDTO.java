@@ -1,7 +1,10 @@
 package ar.edu.huergo.swapify.dto.publicacion;
 
+import java.math.BigDecimal;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,8 +16,16 @@ public class CrearOfertaDTO {
     @Size(max = 2000, message = "La oferta es demasiado extensa")
     private String mensaje;
 
-    @Size(max = 255, message = "El nombre del objeto es muy largo")
-    private String propuestaObjeto;
+    @NotBlank(message = "Indicá el nombre del artículo que ofrecés")
+    @Size(max = 120, message = "El nombre del artículo es demasiado largo")
+    private String nombreArticulo;
+
+    @PositiveOrZero(message = "El precio referencial no puede ser negativo")
+    private BigDecimal precioArticulo;
+
+    @NotBlank(message = "Describí el artículo que ofrecés")
+    @Size(max = 2000, message = "La descripción del artículo es demasiado extensa")
+    private String descripcionArticulo;
 
     private String imagenBase64;
 

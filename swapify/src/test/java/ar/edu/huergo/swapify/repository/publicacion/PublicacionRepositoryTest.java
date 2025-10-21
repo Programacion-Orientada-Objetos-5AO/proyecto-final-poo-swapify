@@ -50,6 +50,7 @@ public class PublicacionRepositoryTest {
         // Then
         assertThat(result).hasSize(2);
         assertThat(result).extracting(Publicacion::getNombre).contains("Libro1", "Libro2");
+        assertThat(result).allSatisfy(pub -> assertThat(pub.getArticulo()).isNotNull());
     }
 
     @Test

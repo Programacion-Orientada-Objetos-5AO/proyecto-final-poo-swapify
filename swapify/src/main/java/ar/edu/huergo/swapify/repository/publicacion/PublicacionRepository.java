@@ -17,7 +17,7 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
     List<Publicacion> findByFechaPublicacionBetween(LocalDateTime inicio, LocalDateTime fin);
 
     @Query("""
-           select coalesce(sum(p.precio), 0)
+           select coalesce(sum(p.articulo.precio), 0)
            from Publicacion p
            where p.fechaPublicacion between :inicio and :fin
            """)
@@ -30,6 +30,6 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, Long> 
 
     List<Publicacion> findAllByOrderByFechaPublicacionDesc();
 
-    List<Publicacion> findDistinctByNombreContainingIgnoreCaseOrDescripcionContainingIgnoreCaseOrObjetoACambiarContainingIgnoreCase(
+    List<Publicacion> findDistinctByArticuloNombreContainingIgnoreCaseOrArticuloDescripcionContainingIgnoreCaseOrObjetoACambiarContainingIgnoreCase(
             String nombre, String descripcion, String objetoACambiar);
 }

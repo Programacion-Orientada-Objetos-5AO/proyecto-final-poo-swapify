@@ -128,10 +128,15 @@
                   <p class="card-text text-body-secondary mt-2 mb-0" th:text="${oferta.mensaje}">Mensaje</p>
                 </div>
                 <div class="d-grid gap-2 publication-card__meta">
-                  <div class="d-flex align-items-center gap-2" th:if="${oferta.propuestaObjeto != null && !oferta.propuestaObjeto.isBlank()}">
-                    <i class="bi bi-arrow-left-right text-primary"></i>
-                    <span><strong>Propone:</strong> <span th:text="${oferta.propuestaObjeto}">Objeto</span></span>
+                  <div class="d-flex align-items-center gap-2" th:if="${oferta.nombreArticulo != null && !oferta.nombreArticulo.isBlank()}">
+                    <i class="bi bi-box-seam text-primary"></i>
+                    <span><strong>Artículo:</strong> <span th:text="${oferta.nombreArticulo}">Artículo</span></span>
                   </div>
+                  <div class="d-flex align-items-center gap-2" th:if="${oferta.precioArticulo != null}">
+                    <i class="bi bi-cash-coin text-primary"></i>
+                    <span><strong>Precio referencial:</strong> <span th:text="${oferta.precioArticulo}">0</span></span>
+                  </div>
+                  <div class="text-body-secondary" th:if="${oferta.descripcionArticulo != null && !oferta.descripcionArticulo.isBlank()}" th:text="${oferta.descripcionArticulo}">Descripción del artículo ofrecido</div>
                   <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-calendar3 text-primary"></i>
                     <span th:text="${oferta.fechaOferta != null ? #temporals.format(oferta.fechaOferta,'dd/MM/yyyy HH:mm') : 'Fecha no disponible'}">--/--/----</span>

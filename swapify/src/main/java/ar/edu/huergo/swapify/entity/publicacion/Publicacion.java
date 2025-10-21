@@ -1,6 +1,5 @@
 package ar.edu.huergo.swapify.entity.publicacion;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,7 +10,6 @@ import ar.edu.huergo.swapify.entity.security.Usuario;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -31,17 +29,13 @@ public class Publicacion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "El nombre es obligatorio")
-    @Column(nullable = false, length = 120)
-    private String nombre;
-
-    @PositiveOrZero(message = "El precio no puede ser negativo")
-    @Column(precision = 12, scale = 2)
-    private BigDecimal precio;
-
-    @NotBlank(message = "La descripción es obligatoria")
-    @Column(nullable = false, length = 2000)
-    private String descripcion;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "nombre", column = @Column(name = "nombre", nullable = false, length = 120)),
+            @AttributeOverride(name = "precio", column = @Column(name = "precio", precision = 12, scale = 2)),
+            @AttributeOverride(name = "descripcion", column = @Column(name = "descripcion", nullable = false, length = 2000))
+    })
+    private Articulo articulo = new Articulo();
 
     @NotBlank(message = "Debe indicar el objeto a cambiar")
     @Column(name = "objeto_a_cambiar", nullable = false, length = 255)
@@ -83,13 +77,11 @@ public class Publicacion {
     @Column(name = "imagen_content_type", length = 100)
     private String legacyImagenContentType;
 
-    public Publicacion(Long id, String nombre, BigDecimal precio, String descripcion,
+    public Publicacion(Long id, String nombre, java.math.BigDecimal precio, String descripcion,
             String objetoACambiar, LocalDateTime fechaPublicacion, Usuario usuario, List<PublicacionImagen> imagenes,
             LocalDateTime fechaReserva, LocalDateTime fechaCierre) {
         this.id = id;
-        this.nombre = nombre;
-        this.precio = precio;
-        this.descripcion = descripcion;
+        this.articulo = new Articulo(nombre, precio, descripcion);
         this.objetoACambiar = objetoACambiar;
         this.fechaPublicacion = fechaPublicacion;
         this.usuario = usuario;
@@ -118,6 +110,38 @@ public class Publicacion {
 
     public boolean tieneImagenes() {
         return imagenes != null && !imagenes.isEmpty();
+    }
+
+    public Articulo getArticulo() {
+        return articulo;
+    }
+
+    public void setArticulo(Articulo articulo) {
+        this.articulo = articulo;
+    }
+
+    public String getNombre() {
+        return articulo != null ? articulo.getNombre() : null;
+    }
+
+    public void setNombre(String nombre) {
+        asegurarArticulo().setNombre(nombre);
+    }
+
+    public java.math.BigDecimal getPrecio() {
+        return articulo != null ? articulo.getPrecio() : null;
+    }
+
+    public void setPrecio(java.math.BigDecimal precio) {
+        asegurarArticulo().setPrecio(precio);
+    }
+
+    public String getDescripcion() {
+        return articulo != null ? articulo.getDescripcion() : null;
+    }
+
+    public void setDescripcion(String descripcion) {
+        asegurarArticulo().setDescripcion(descripcion);
     }
 
     public void limpiarImagenes() {
@@ -209,5 +233,12 @@ public class Publicacion {
 
     public void setLegacyImagenContentType(String legacyImagenContentType) {
         this.legacyImagenContentType = legacyImagenContentType;
+    }
+
+    private Articulo asegurarArticulo() {
+        if (this.articulo == null) {
+            this.articulo = new Articulo();
+        }
+        return this.articulo;
     }
 }

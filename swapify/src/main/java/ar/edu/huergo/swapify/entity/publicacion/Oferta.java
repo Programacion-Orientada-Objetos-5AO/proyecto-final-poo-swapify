@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
@@ -35,8 +36,13 @@ public class Oferta {
     @Column(nullable = false, length = 2000)
     private String mensaje;
 
-    @Column(name = "propuesta_objeto", length = 255)
-    private String propuestaObjeto;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "nombre", column = @Column(name = "articulo_nombre", length = 120)),
+            @AttributeOverride(name = "precio", column = @Column(name = "articulo_precio", precision = 12, scale = 2)),
+            @AttributeOverride(name = "descripcion", column = @Column(name = "articulo_descripcion", length = 2000))
+    })
+    private Articulo articulo = new Articulo();
 
     @Column(name = "fecha_oferta", nullable = false)
     private LocalDateTime fechaOferta;
@@ -94,5 +100,44 @@ public class Oferta {
 
     public boolean estaRechazada() {
         return EstadoOferta.RECHAZADA.equals(estado);
+    }
+
+    public Articulo getArticulo() {
+        return articulo;
+    }
+
+    public void setArticulo(Articulo articulo) {
+        this.articulo = articulo;
+    }
+
+    public String getNombreArticulo() {
+        return articulo != null ? articulo.getNombre() : null;
+    }
+
+    public void setNombreArticulo(String nombre) {
+        asegurarArticulo().setNombre(nombre);
+    }
+
+    public BigDecimal getPrecioArticulo() {
+        return articulo != null ? articulo.getPrecio() : null;
+    }
+
+    public void setPrecioArticulo(BigDecimal precio) {
+        asegurarArticulo().setPrecio(precio);
+    }
+
+    public String getDescripcionArticulo() {
+        return articulo != null ? articulo.getDescripcion() : null;
+    }
+
+    public void setDescripcionArticulo(String descripcion) {
+        asegurarArticulo().setDescripcion(descripcion);
+    }
+
+    private Articulo asegurarArticulo() {
+        if (this.articulo == null) {
+            this.articulo = new Articulo();
+        }
+        return this.articulo;
     }
 }

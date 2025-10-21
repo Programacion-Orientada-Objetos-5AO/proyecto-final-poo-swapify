@@ -34,6 +34,8 @@ public class PublicacionTest {
         assertEquals("Libro", publicacion.getNombre());
         assertEquals(new BigDecimal("100.00"), publicacion.getPrecio());
         assertEquals("Libro de programación", publicacion.getDescripcion());
+        assertNotNull(publicacion.getArticulo());
+        assertEquals("Libro", publicacion.getArticulo().getNombre());
         assertEquals("Otro libro", publicacion.getObjetoACambiar());
         assertEquals(LocalDateTime.of(2023, 1, 1, 12, 0), publicacion.getFechaPublicacion());
         assertTrue(publicacion.tieneImagenes());
@@ -58,6 +60,8 @@ public class PublicacionTest {
         assertEquals("Mesa", publicacion.getNombre());
         assertEquals(new BigDecimal("200.00"), publicacion.getPrecio());
         assertEquals("Mesa de madera", publicacion.getDescripcion());
+        assertNotNull(publicacion.getArticulo());
+        assertEquals("Mesa", publicacion.getArticulo().getNombre());
         assertEquals("Silla", publicacion.getObjetoACambiar());
         assertEquals(fecha, publicacion.getFechaPublicacion());
         assertEquals(usuario, publicacion.getUsuario());

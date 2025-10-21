@@ -1,6 +1,7 @@
 package ar.edu.huergo.swapify.service.publicacion;
 
 import ar.edu.huergo.swapify.dto.publicacion.CrearOfertaDTO;
+import ar.edu.huergo.swapify.entity.publicacion.Articulo;
 import ar.edu.huergo.swapify.entity.publicacion.EstadoOferta;
 import ar.edu.huergo.swapify.entity.publicacion.EstadoPublicacion;
 import ar.edu.huergo.swapify.entity.publicacion.Oferta;
@@ -76,7 +77,7 @@ public class OfertaService {
         oferta.setPublicacion(publicacion);
         oferta.setUsuario(usuario);
         oferta.setMensaje(dto.getMensaje());
-        oferta.setPropuestaObjeto(dto.getPropuestaObjeto());
+        oferta.setArticulo(new Articulo(dto.getNombreArticulo(), dto.getPrecioArticulo(), dto.getDescripcionArticulo()));
         oferta.setEstado(EstadoOferta.PENDIENTE);
         oferta.setFechaOferta(LocalDateTime.now());
 
