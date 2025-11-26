@@ -9,11 +9,11 @@ import java.util.regex.Pattern;
 public class PasswordValidator {
     
     private static final Pattern PASSWORD_PATTERN = Pattern.compile(
-        "^(?=.*[a-zA-Z])(?=.*\\d)[A-Za-z\\d@$!%*?&]{8,}$"
+        "^(?=.*[A-Z])(?=.*\\d).{8,}$"
     );
 
     private static final String PASSWORD_MESSAGE =
-        "La contraseña debe tener al menos 8 caracteres, una letra y un número";
+        "La contraseña debe tener al menos 8 caracteres, una letra mayúscula y un número";
     
     /**
      * Valida si una contraseña cumple con los requisitos de seguridad.
@@ -22,7 +22,12 @@ public class PasswordValidator {
      * @return true si la contraseña es válida, false en caso contrario
      */
     public static boolean isValid(String password) {
-        return password != null && PASSWORD_PATTERN.matcher(password).matches();
+        if (password == null) {
+            return false;
+        }
+
+        String normalizado = password.trim();
+        return PASSWORD_PATTERN.matcher(normalizado).matches();
     }
     
     /**

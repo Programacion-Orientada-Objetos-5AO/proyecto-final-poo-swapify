@@ -42,10 +42,12 @@ public class UsuarioService {
         if (password == null || verificacionPassword == null) {
             throw new IllegalArgumentException("Las contraseñas no pueden ser null");
         }
-        if (!password.equals(verificacionPassword)) {
+        String passwordNormalizado = password.trim();
+        String verificacionNormalizada = verificacionPassword.trim();
+        if (!passwordNormalizado.equals(verificacionNormalizada)) {
             throw new IllegalArgumentException("Las contraseñas no coinciden");
         }
-        PasswordValidator.validate(password);
+        PasswordValidator.validate(passwordNormalizado);
         String usernameNormalizado = normalizarEmail(usuario.getUsername());
         usuario.setUsername(usernameNormalizado);
         if (usuarioRepository.existsByUsernameIgnoreCase(usernameNormalizado)) {
@@ -59,8 +61,9 @@ public class UsuarioService {
             usuario.setNombre(nombreNormalizado);
         }
 
-        usuario.setPassword(passwordEncoder.encode(password));
-        Rol rolCliente = rolRepository.findByNombre("CLIENTE").orElseThrow(() -> new IllegalArgumentException("Rol 'CLIENTE' no encontrado"));
+        usuario.setPassword(passwordEncoder.encode(passwordNormalizado));
+        Rol rolCliente = rolRepository.findByNombre("CLIENTE")
+                .orElseGet(() -> rolRepository.saveAndFlush(new Rol("CLIENTE")));
         usuario.setRoles(new java.util.HashSet<>(Set.of(rolCliente)));
         return usuarioRepository.save(usuario);
     }
@@ -128,16 +131,21 @@ public class UsuarioService {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("Usuario inválido");
         }
-        if (nueva == null || confirmacion == null || !nueva.equals(confirmacion)) {
+        String nuevaNormalizada = nueva == null ? null : nueva.trim();
+        String confirmacionNormalizada = confirmacion == null ? null : confirmacion.trim();
+        if (nuevaNormalizada == null || confirmacionNormalizada == null
+                || !nuevaNormalizada.equals(confirmacionNormalizada)) {
             throw new IllegalArgumentException("Las contraseñas nuevas no coinciden");
         }
-        PasswordValidator.validate(nueva);
+        PasswordValidator.validate(nuevaNormalizada);
         Usuario usuario = usuarioRepository.findByUsernameIgnoreCase(normalizarEmail(username))
                 .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-        if (actual == null || !passwordEncoder.matches(actual, usuario.getPassword())) {
+        String actualNormalizado = actual == null ? null : actual.trim();
+        if (actualNormalizado == null
+                || !passwordEncoder.matches(actualNormalizado, usuario.getPassword())) {
             throw new IllegalArgumentException("La contraseña actual no es válida");
         }
-        usuario.setPassword(passwordEncoder.encode(nueva));
+        usuario.setPassword(passwordEncoder.encode(nuevaNormalizada));
     }
 
     @Transactional
