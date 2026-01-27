@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Detalle</title></head>
+<body>
+<div th:replace="~{base :: layout(${titulo} ?: 'Detalle', ~{::section})}">
+  <section class="detail-layout" th:with="estado=${estadoPublicacion != null ? estadoPublicacion.name() : 'ACTIVA'}">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones}"><i class="bi bi-arrow-left"></i> Volver al catálogo</a>
+        <div class="d-flex align-items-center flex-wrap gap-3 mt-4">
+          <h1 class="display-6 fw-bold mb-1" th:text="${titulo} ?: 'Detalle de la publicación'">Detalle</h1>
+          <span class="badge-status"
+                th:classappend="${estado == 'ACTIVA'} ? ' badge-status--activa' :
+                               (${estado == 'EN_NEGOCIACION'} ? ' badge-status--negociacion' :
+                               (${estado == 'PAUSADA'} ? ' badge-status--pausada' : ' badge-status--finalizada'))">
+            <i class="bi"
+               th:class="${estado == 'ACTIVA'} ? 'bi-lightning-charge-fill' :
+                          (${estado == 'EN_NEGOCIACION'} ? 'bi-people-arrows' :
+                          (${estado == 'PAUSADA'} ? 'bi-pause-circle-fill' : 'bi-flag-fill'))"></i>
+            <span th:text="${estado == 'ACTIVA'} ? 'Disponible' :
+                              (${estado == 'EN_NEGOCIACION'} ? 'En negociación' :
+                              (${estado == 'PAUSADA'} ? 'Pausada' : 'Finalizada'))">Disponible</span>
+          </span>
+          <span class="badge badge-oficial" th:if="${publicacion.oficial}">
+            <i class="bi bi-patch-check-fill"></i> Swapify Oficial
+          </span>
+        </div>
+        <p class="text-body-secondary mb-0">Revisá la información clave antes de confirmar tu propuesta de intercambio.</p>
+      </div>
+      <span class="badge-soft">ID #<span th:text="${publicacion.id}">1</span></span>
+    </div>
+
+    <div class="row g-4 align-items-start">
+      <div class="col-lg-8">
+        <div class="card detail-card">
+          <div class="card-body p-4 p-lg-5 d-grid gap-4">
+            <div>
+              <span class="badge text-bg-primary-subtle text-primary text-uppercase fw-semibold mb-3">Publicación destacada</span>
+              <h2 class="h3 fw-semibold mb-2" th:text="${publicacion.nombre}">Nombre</h2>
+              <p class="text-body-secondary mb-0" th:text="${publicacion.descripcion}">Descripción</p>
+            </div>
+            <div class="publication-media"
+                 th:if="${!#lists.isEmpty(publicacion.imagenesOrdenadas)}"
+                 th:classappend="${estado == 'EN_NEGOCIACION'} ? ' reserved' : ''"
+                 th:with="carouselId=${'galeriaPublicacion-' + publicacion.id}">
+              <div class="carousel slide" th:attr="id=${carouselId}" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                  <div class="carousel-item"
+                       th:each="imagen, iter : ${publicacion.imagenesOrdenadas}"
+                       th:classappend="${iter.index == 0} ? ' active' : ''">
+                    <img class="d-block w-100 publication-media__img"
+                         th:src="${imagen.dataUri}"
+                         th:alt="${'Imagen ' + (iter.index + 1) + ' de ' + publicacion.nombre}">
+                  </div>
+                </div>
+                <button class="carousel-control-prev" type="button" th:attr="data-bs-target='#' + ${carouselId}" data-bs-slide="prev"
+                        th:if="${#lists.size(publicacion.imagenesOrdenadas) > 1}">
+                  <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                  <span class="visually-hidden">Anterior</span>
+                </button>
+                <button class="carousel-control-next" type="button" th:attr="data-bs-target='#' + ${carouselId}" data-bs-slide="next"
+                        th:if="${#lists.size(publicacion.imagenesOrdenadas) > 1}">
+                  <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                  <span class="visually-hidden">Siguiente</span>
+                </button>
+              </div>
+            </div>
+            <div class="publication-media placeholder" th:if="${#lists.isEmpty(publicacion.imagenesOrdenadas)}">
+              <div class="placeholder-inner">
+                <i class="bi bi-image"></i>
+                <p class="mb-0">El autor aún no cargó una imagen para este artículo.</p>
+              </div>
+            </div>
+            <div class="detail-meta">
+              <div class="detail-meta-item">
+                <i class="bi bi-arrow-left-right"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Busca intercambiar por</p>
+                  <p class="mb-0 text-body-secondary" th:text="${publicacion.objetoACambiar}">Objeto</p>
+                </div>
+              </div>
+              <div class="detail-meta-item" th:if="${publicacion.precio != null}">
+                <i class="bi bi-cash-stack"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Valor de referencia</p>
+                  <p class="mb-0 text-success fw-bold" th:text="${publicacion.precio}">0</p>
+                </div>
+              </div>
+              <div class="detail-meta-item">
+                <i class="bi bi-calendar-event"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Publicada el</p>
+                  <p class="mb-0 text-body-secondary"
+                     th:text="${publicacion.fechaPublicacion != null ? #temporals.format(publicacion.fechaPublicacion,'dd/MM/yyyy HH:mm') : 'Sin fecha registrada'}">Fecha</p>
+                </div>
+              </div>
+              <div class="detail-meta-item">
+                <i class="bi bi-person-badge"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Publicado por</p>
+                  <p class="mb-0 text-body-secondary">
+                    <span th:text="${publicacion.oficial ? 'Swapify Oficial' : (publicacion.usuario != null ? (publicacion.usuario.nombre != null ? publicacion.usuario.nombre : publicacion.usuario.username) : publicacion.usuarioUsername)}">Usuario</span>
+                    <span class="badge badge-oficial ms-2" th:if="${publicacion.oficial}">
+                      <i class="bi bi-shield-lock-fill"></i> Oficial
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="coordination-card" th:if="${ofertaAceptada != null}">
+              <h3 class="h5 fw-semibold mb-2"><i class="bi bi-people-fill text-success me-2"></i>Intercambio en coordinación</h3>
+              <p class="mb-0" th:if="${puedeCoordinar}">
+                Ponete en contacto con
+                <strong th:text="${ofertaAceptada.usuario != null ? (ofertaAceptada.usuario.nombre != null ? ofertaAceptada.usuario.nombre : ofertaAceptada.usuario.username) : 'la persona interesada'}">usuario</strong>
+                para acordar el punto de encuentro y los detalles del intercambio.
+              </p>
+              <div class="coordination-card__contacts" th:if="${puedeCoordinar}">
+                <a class="btn btn-success btn-icon"
+                   th:if="${ofertaAceptada.usuario != null}"
+                   th:href="${'mailto:' + ofertaAceptada.usuario.username}">
+                  <i class="bi bi-envelope-fill"></i> Escribir a <span th:text="${ofertaAceptada.usuario != null ? (ofertaAceptada.usuario.nombre != null ? ofertaAceptada.usuario.nombre : ofertaAceptada.usuario.username) : 'usuario'}">usuario</span>
+                </a>
+                <a class="btn btn-outline-light btn-icon"
+                   th:if="${publicacion.usuario != null}"
+                   th:href="${'mailto:' + publicacion.usuario.username}">
+                  <i class="bi bi-send"></i> Contactar a <span th:text="${publicacion.usuario != null ? (publicacion.usuario.nombre != null ? publicacion.usuario.nombre : publicacion.usuario.username) : 'propietario'}">propietario</span>
+                </a>
+              </div>
+              <p class="coordination-note mt-3" th:if="${!puedeCoordinar}">
+                Este intercambio está reservado mientras las partes coordinan los detalles. Podés explorar otras publicaciones disponibles.
+              </p>
+            </div>
+            <div class="alert alert-warning mt-2" th:if="${estado == 'PAUSADA'}">
+              <i class="bi bi-clock-history me-2"></i>El autor pausó temporalmente esta publicación. Volvé más tarde o revisá otras opciones.
+            </div>
+            <div class="alert alert-success mt-2" th:if="${estado == 'FINALIZADA'}">
+              <i class="bi bi-check-circle me-2"></i>Este intercambio ya fue concretado. Gracias por utilizar Swapify.
+            </div>
+            <div class="detail-actions">
+              <a class="btn btn-primary btn-icon"
+                 th:if="${esPropietario}"
+                 th:href="@{/web/publicaciones/{id}/ofertas(id=${publicacion.id})}">
+                <i class="bi bi-chat-text"></i> Gestionar ofertas
+              </a>
+              <a class="btn btn-primary btn-icon"
+                 th:if="${!esPropietario}"
+                 href="#ofertas">
+                <i class="bi bi-chat-text"></i> Ver ofertas
+              </a>
+              <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones/nueva}" sec:authorize="isAuthenticated()">
+                <i class="bi bi-plus-circle"></i> Publicar algo similar
+              </a>
+              <a class="btn btn-outline-secondary btn-icon" th:href="@{/web/registro}" sec:authorize="!isAuthenticated()">
+                <i class="bi bi-person-plus"></i> Registrate para proponer</a>
+            </div>
+            <div class="detail-state-actions" th:if="${esPropietario or esAdmin}">
+              <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+                <input type="hidden" name="estado" value="EN_NEGOCIACION"/>
+                <button type="submit" class="btn btn-outline-primary btn-icon"
+                        th:disabled="${estado == 'EN_NEGOCIACION'}">
+                  <i class="bi bi-people"></i> Reservar publicación
+                </button>
+              </form>
+              <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+                <input type="hidden" name="estado" value="FINALIZADA"/>
+                <button type="submit" class="btn btn-success btn-icon"
+                        th:disabled="${estado == 'FINALIZADA'}">
+                  <i class="bi bi-check2-circle"></i> Marcar como finalizada
+                </button>
+              </form>
+              <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+                <input type="hidden" name="estado" value="ACTIVA"/>
+                <button type="submit" class="btn btn-outline-light btn-icon"
+                        th:disabled="${estado == 'ACTIVA'}">
+                  <i class="bi bi-arrow-counterclockwise"></i> Reabrir publicación
+                </button>
+              </form>
+              <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+                <input type="hidden" name="estado" value="PAUSADA"/>
+                <button type="submit" class="btn btn-outline-warning btn-icon text-warning"
+                        th:disabled="${estado == 'PAUSADA'}">
+                  <i class="bi bi-pause-circle"></i> Pausar
+                </button>
+              </form>
+            </div>
+            <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3"
+                 role="alert"
+                 th:if="${esPropietario or esAdmin}">
+              <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                <div>
+                  <h3 class="h6 fw-semibold mb-1">Eliminar publicación</h3>
+                  <p class="mb-0">Esta acción quitará la publicación, sus imágenes y ofertas asociadas de forma permanente.</p>
+                </div>
+              </div>
+              <form th:action="@{/web/publicaciones/{id}/eliminar(id=${publicacion.id})}" method="post"
+                    onsubmit="return confirm('¿Seguro que querés eliminar esta publicación?')">
+                <input type="hidden" name="redirect"
+                       th:value="${esAdmin and !esPropietario} ? 'admin' : 'mis'"/>
+                <button type="submit" class="btn btn-danger btn-icon">
+                  <i class="bi bi-trash"></i> Eliminar definitivamente
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div id="ofertas" class="card mt-4 detail-offers">
+          <div class="card-header d-flex flex-wrap gap-3 align-items-center justify-content-between">
+            <div>
+              <h3 class="h5 fw-semibold mb-1">Ofertas recibidas</h3>
+              <p class="text-body-secondary mb-0">Consultá las propuestas de la comunidad y respondé desde tu bandeja.</p>
+            </div>
+            <span class="badge text-bg-primary-subtle text-primary" th:text="${#lists.size(ofertas)} + ' ofertas'">0 ofertas</span>
+          </div>
+          <div class="card-body p-4 p-lg-5">
+            <div th:if="${successOferta != null}" class="alert alert-success" th:text="${successOferta}">Oferta enviada</div>
+            <div th:if="${errorOferta != null}" class="alert alert-danger" th:text="${errorOferta}">Error</div>
+
+            <div class="offer-form" sec:authorize="isAuthenticated()" th:if="${puedeOfertar}">
+              <h4 class="h6 fw-semibold mb-3">Proponer intercambio</h4>
+              <form th:action="@{/web/publicaciones/{id}/ofertas(id=${publicacion.id})}" method="post" class="vstack gap-3" th:object="${nuevaOferta}" enctype="multipart/form-data">
+                <div>
+                  <label class="form-label">¿Qué ofrecés a cambio? *</label>
+                  <textarea class="form-control" rows="3" th:field="*{mensaje}" placeholder="Describí tu propuesta" required></textarea>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Nombre del artículo ofrecido *</label>
+                    <input type="text" class="form-control" th:field="*{nombreArticulo}" placeholder="Ej: Consola Nintendo Switch" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Precio referencial (opcional)</label>
+                    <input type="number" class="form-control" th:field="*{precioArticulo}" min="0" step="0.01" placeholder="Ej: 15000">
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label">Descripción del artículo ofrecido *</label>
+                  <textarea class="form-control" rows="3" th:field="*{descripcionArticulo}" placeholder="Compartí detalles del estado y accesorios" required></textarea>
+                </div>
+                <div>
+                  <label class="form-label">Imagen de referencia (opcional)</label>
+                  <input type="file" class="form-control" th:field="*{imagenArchivo}" accept="image/*">
+                  <div class="form-text">Adjuntá una foto del artículo que ofrecés para sumar confianza.</div>
+                </div>
+                <div class="d-flex gap-2">
+                  <button type="submit" class="btn btn-success btn-icon"><i class="bi bi-send"></i> Enviar oferta</button>
+                  <a class="btn btn-outline-secondary" th:href="@{/web/publicaciones/{id}(id=${publicacion.id})}">Limpiar</a>
+                </div>
+              </form>
+            </div>
+            <div class="alert alert-warning" sec:authorize="isAuthenticated()" th:if="${!puedeOfertar}">
+              <i class="bi bi-exclamation-triangle me-2"></i>Esta publicación no acepta nuevas ofertas en este momento.
+              <span th:if="${estado == 'EN_NEGOCIACION'}">Ya hay un intercambio en marcha.</span>
+              <span th:if="${estado == 'FINALIZADA'}">El intercambio fue concretado.</span>
+              <span th:if="${estado == 'PAUSADA'}">El autor pausó la recepción de propuestas.</span>
+            </div>
+            <div class="alert alert-info" sec:authorize="!isAuthenticated()">
+              <i class="bi bi-info-circle me-2"></i>Iniciá sesión para enviar tu oferta y continuar la conversación.
+            </div>
+
+            <div th:if="${#lists.isEmpty(ofertas)}" class="empty-offers">
+              <i class="bi bi-envelope-open"></i>
+              <p class="mb-1 fw-semibold">Todavía no hay ofertas.</p>
+              <p class="mb-0 text-body-secondary">Sé la primera persona en proponer un intercambio.</p>
+            </div>
+
+            <div class="offer-timeline" th:if="${!#lists.isEmpty(ofertas)}">
+              <div class="offer-card" th:each="oferta : ${ofertas}">
+                <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
+                  <div>
+                    <p class="fw-semibold mb-1" th:text="${oferta.usuario != null ? (oferta.usuario.nombre != null ? oferta.usuario.nombre : oferta.usuario.username) : 'Usuario Swapify'}">usuario</p>
+                    <p class="mb-0 text-body-secondary"
+                       th:text="${oferta.fechaOferta != null ? #temporals.format(oferta.fechaOferta,'dd/MM/yyyy HH:mm') : 'Fecha no disponible'}">fecha</p>
+                  </div>
+                  <div class="d-flex flex-column align-items-end gap-2">
+                    <span class="badge text-bg-light text-dark" th:if="${oferta.nombreArticulo != null && !oferta.nombreArticulo.isBlank()}" th:text="${oferta.nombreArticulo}">Artículo ofrecido</span>
+                    <span class="badge fw-semibold"
+                          th:classappend="${oferta.estado == estadoAceptada} ? ' text-bg-success' : (oferta.estado == estadoRechazada ? ' text-bg-danger' : ' text-bg-warning text-dark')}"
+                          th:text="${oferta.estado == estadoAceptada ? 'Aceptada' : (oferta.estado == estadoRechazada ? 'Rechazada' : 'Pendiente')}"
+                    >Pendiente</span>
+                  </div>
+                </div>
+                <p class="mt-3 mb-0" th:text="${oferta.mensaje}">Mensaje</p>
+                <div class="mt-3">
+                  <h5 class="h6 mb-2">Artículo ofrecido</h5>
+                  <p class="mb-1" th:if="${oferta.nombreArticulo != null && !oferta.nombreArticulo.isBlank()}"><strong th:text="${oferta.nombreArticulo}">Nombre del artículo</strong></p>
+                  <p class="mb-1" th:if="${oferta.precioArticulo != null}"><strong>Precio referencial:</strong> <span th:text="${oferta.precioArticulo}">0</span></p>
+                  <p class="mb-0 text-body-secondary" th:text="${oferta.descripcionArticulo}">Descripción del artículo</p>
+                </div>
+                <div class="mt-3" th:if="${oferta.imagenDataUri != null}">
+                  <img class="rounded shadow-sm w-100" th:src="${oferta.imagenDataUri}" th:alt="${'Imagen de la oferta de ' + (oferta.usuario != null ? (oferta.usuario.nombre != null ? oferta.usuario.nombre : oferta.usuario.username) : 'usuario')}" loading="lazy">
+                </div>
+                <div class="mt-3" th:if="${oferta.estado == estadoAceptada && oferta.fechaRespuesta != null}">
+                  <small class="text-success-emphasis d-block">Confirmada el <span th:text="${#temporals.format(oferta.fechaRespuesta,'dd/MM/yyyy HH:mm')}">fecha</span></small>
+                </div>
+                <div class="mt-3" th:if="${oferta.estado == estadoRechazada && oferta.fechaRespuesta != null}">
+                  <small class="text-danger-emphasis d-block">Rechazada el <span th:text="${#temporals.format(oferta.fechaRespuesta,'dd/MM/yyyy HH:mm')}">fecha</span></small>
+                </div>
+                <div class="mt-3 d-flex gap-2 flex-wrap" th:if="${esPropietario && oferta.estado == estadoPendiente}">
+                  <form th:action="@{/web/publicaciones/{publicacionId}/ofertas/{ofertaId}/aceptar(publicacionId=${publicacion.id}, ofertaId=${oferta.id})}" method="post">
+                    <button type="submit" class="btn btn-success btn-sm btn-icon"><i class="bi bi-check-circle"></i> Aceptar</button>
+                  </form>
+                  <form th:action="@{/web/publicaciones/{publicacionId}/ofertas/{ofertaId}/rechazar(publicacionId=${publicacion.id}, ofertaId=${oferta.id})}" method="post">
+                    <button type="submit" class="btn btn-outline-danger btn-sm btn-icon"><i class="bi bi-x-circle"></i> Rechazar</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="form-guidelines">
+          <h3 class="mb-3"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Tips para un intercambio exitoso</h3>
+          <ul>
+            <li>Confirmá los detalles del objeto y acordá un punto de encuentro seguro.</li>
+            <li>Revisá el historial y las calificaciones de la persona con quien vas a intercambiar.</li>
+            <li>Guardá toda la conversación dentro de Swapify para mayor tranquilidad.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Panel de administración</title></head>
+<body>
+<div th:replace="~{base :: layout('Panel de administración', ~{::section})}">
+  <section class="admin-panel">
+    <div class="alert alert-warning alert-dismissible fade show" role="alert" th:if="${panelCargaError}">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      No pudimos actualizar todas las métricas del panel. Los datos mostrados pueden estar incompletos, intentá nuevamente en unos segundos.
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div class="admin-section-title">
+      <div>
+        <h1 class="display-6 fw-bold mb-1">Panel de administración</h1>
+        <p class="text-body-secondary mb-0">Supervisá usuarios, publicaciones y ofertas en tiempo real.</p>
+      </div>
+      <span class="badge badge-oficial"><i class="bi bi-shield-lock-fill"></i> Acceso total</span>
+    </div>
+
+    <div class="admin-summary">
+      <div class="admin-summary-card">
+        <h4>Usuarios activos</h4>
+        <strong th:text="${#lists.size(usuarios)}">0</strong>
+        <p class="text-body-secondary mb-0">Cuentas registradas en la plataforma.</p>
+      </div>
+      <div class="admin-summary-card">
+        <h4>Publicaciones</h4>
+        <strong th:text="${resumenPublicaciones['total']}">0</strong>
+        <p class="text-body-secondary mb-0">Activas: <span th:text="${resumenPublicaciones['activas']}">0</span> · En negociación: <span th:text="${resumenPublicaciones['enNegociacion']}">0</span> · Oficiales: <span th:text="${resumenPublicaciones['oficiales']}">0</span></p>
+      </div>
+      <div class="admin-summary-card">
+        <h4>Intercambios cerrados</h4>
+        <strong th:text="${resumenPublicaciones['finalizadas']}">0</strong>
+        <p class="text-body-secondary mb-0">Publicaciones marcadas como finalizadas.</p>
+      </div>
+      <div class="admin-summary-card">
+        <h4>Ofertas pendientes</h4>
+        <strong th:text="${resumenOfertas['pendientes']}">0</strong>
+        <p class="text-body-secondary mb-0">Aceptadas: <span th:text="${resumenOfertas['aceptadas']}">0</span> · Rechazadas: <span th:text="${resumenOfertas['rechazadas']}">0</span></p>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4 p-lg-5">
+        <div class="admin-section-title mb-3">
+          <h2 class="h4 fw-semibold mb-0">Gestión de cuentas</h2>
+          <span class="badge text-bg-light text-dark" th:text="${passwordPolicy}">Las contraseñas deben ser seguras</span>
+        </div>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th class="text-center">Publicaciones</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="usuario : ${usuarios}">
+              <td>
+                <div class="d-flex flex-column">
+                  <strong th:text="${usuario.username}">usuario@swapify.com</strong>
+                  <small class="text-body-secondary"
+                         th:text="${rolesPorUsuario.containsKey(usuario.id) ? rolesPorUsuario[usuario.id] : 'Sin roles asignados'}">
+                    ROLES
+                  </small>
+                </div>
+              </td>
+              <td class="text-center" th:text="${publicacionesPorUsuario.containsKey(usuario.id) ? publicacionesPorUsuario[usuario.id] : 0}">0</td>
+              <td>
+                <div class="admin-actions">
+                  <div class="mb-2">
+                    <span class="badge"
+                          th:classappend="${usuario.estaBaneado()} ? ' text-bg-danger' : ' text-bg-success'"
+                          th:text="${usuario.estaBaneado()} ? |Suspendida hasta ${#temporals.format(usuario.baneadoHasta, 'dd/MM/yyyy HH:mm')}| : 'Cuenta activa'">
+                      Estado
+                    </span>
+                    <small class="d-block text-body-secondary" th:if="${usuario.estaBaneado() && usuario.motivoBan != null}">Motivo: <span th:text="${usuario.motivoBan}">motivo</span></small>
+                  </div>
+                  <div th:if="${usuario.esAdministrador()}">
+                    <span class="badge text-bg-primary"><i class="bi bi-shield-lock me-1"></i> Cuenta administrativa</span>
+                    <small class="d-block text-body-secondary mt-1">Estas cuentas no pueden suspenderse ni eliminarse.</small>
+                  </div>
+                  <div th:if="${!usuario.esAdministrador()}" class="d-flex flex-column gap-2">
+                    <form th:action="@{/web/admin/usuarios/{id}/banear(id=${usuario.id})}" method="post" class="d-flex flex-wrap gap-2 align-items-center">
+                      <input type="number" class="form-control form-control-sm" name="dias" min="1" placeholder="Días" required>
+                      <input type="text" class="form-control form-control-sm" name="motivo" placeholder="Motivo (opcional)">
+                      <button type="submit" class="btn btn-outline-warning btn-sm">Suspender</button>
+                    </form>
+                    <form th:if="${usuario.estaBaneado()}" th:action="@{/web/admin/usuarios/{id}/levantar-ban(id=${usuario.id})}" method="post">
+                      <button type="submit" class="btn btn-outline-success btn-sm">Levantar suspensión</button>
+                    </form>
+                    <form th:action="@{/web/admin/usuarios/{id}/eliminar(id=${usuario.id})}" method="post" onsubmit="return confirm('¿Seguro que querés eliminar esta cuenta?');">
+                      <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
+                    </form>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(usuarios)}">
+              <td colspan="3" class="text-center text-body-secondary py-4">No hay usuarios registrados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4 p-lg-5">
+        <div class="admin-section-title mb-3">
+          <h2 class="h4 fw-semibold mb-0">Publicaciones en seguimiento</h2>
+          <span class="badge text-bg-light text-dark">Controlá estados y visibilidad</span>
+        </div>
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Estado</th>
+              <th>Autor</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="publicacion : ${publicaciones}">
+              <td th:text="${publicacion.id}">1</td>
+              <td>
+                <div class="d-flex flex-column">
+                  <strong th:text="${publicacion.nombre}">Nombre</strong>
+                  <span class="text-body-secondary" th:text="${#strings.abbreviate(publicacion.descripcion, 90)}">Descripción</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge-status"
+                      th:with="estado=${publicacion.estado != null ? publicacion.estado.name() : 'ACTIVA'}"
+                      th:classappend="${estado == 'ACTIVA'} ? ' badge-status--activa' :
+                                     (${estado == 'EN_NEGOCIACION'} ? ' badge-status--negociacion' :
+                                     (${estado == 'PAUSADA'} ? ' badge-status--pausada' : ' badge-status--finalizada'))">
+                  <span th:text="${estado == 'ACTIVA'} ? 'Activa' :
+                                    (${estado == 'EN_NEGOCIACION'} ? 'En negociación' :
+                                    (${estado == 'PAUSADA'} ? 'Pausada' : 'Finalizada'))">Estado</span>
+                </span>
+              </td>
+              <td>
+                <div class="d-flex flex-column">
+                  <span th:text="${publicacion.usuario != null ? (publicacion.usuario.nombre != null ? publicacion.usuario.nombre : publicacion.usuario.username) : 'Swapify Oficial'}">usuario</span>
+                  <small class="text-body-secondary" th:if="${publicacion.oficial}"><i class="bi bi-patch-check-fill text-success me-1"></i>Oficial</small>
+                </div>
+              </td>
+              <td th:text="${publicacion.fechaPublicacion != null ? #temporals.format(publicacion.fechaPublicacion,'dd/MM/yyyy HH:mm') : 'Sin fecha'}">01/01/2024</td>
+              <td>
+                <div class="admin-actions">
+                  <a class="btn btn-outline-primary btn-sm" th:href="@{/web/publicaciones/{id}(id=${publicacion.id})}"><i class="bi bi-eye"></i> Ver</a>
+                  <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+                    <input type="hidden" name="estado" value="ACTIVA"/>
+                    <input type="hidden" name="redirect" value="admin"/>
+                    <button type="submit" class="btn btn-outline-light btn-sm" th:disabled="${publicacion.estaActiva()}">Reabrir</button>
+                  </form>
+                  <form th:action="@{/web/publicaciones/{id}/estado(id=${publicacion.id})}" method="post">
+                    <input type="hidden" name="estado" value="FINALIZADA"/>
+                    <input type="hidden" name="redirect" value="admin"/>
+                    <button type="submit" class="btn btn-outline-success btn-sm" th:disabled="${publicacion.estaFinalizada()}">Finalizar</button>
+                  </form>
+                  <form th:action="@{/web/admin/publicaciones/{id}/oficial(id=${publicacion.id})}" method="post">
+                    <input type="hidden" name="valor" th:value="${!publicacion.oficial}"/>
+                    <button type="submit" class="btn btn-outline-warning btn-sm"
+                            th:text="${publicacion.oficial} ? 'Quitar oficial' : 'Marcar oficial'"></button>
+                  </form>
+                  <form th:action="@{/web/publicaciones/{id}/eliminar(id=${publicacion.id})}" method="post"
+                        onsubmit="return confirm('¿Seguro que querés eliminar esta publicación?');">
+                    <input type="hidden" name="redirect" value="admin"/>
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                      <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(publicaciones)}">
+              <td colspan="6" class="text-center text-body-secondary py-4">No hay publicaciones registradas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

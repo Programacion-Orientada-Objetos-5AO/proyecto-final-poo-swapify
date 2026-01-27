@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Seguridad de la cuenta</title></head>
+<body>
+<div th:replace="~{base :: layout(${titulo} ?: 'Seguridad', ~{::section})}">
+  <section class="account-security">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones}"><i class="bi bi-arrow-left"></i> Volver a Swapify</a>
+        <h1 class="display-6 fw-bold mt-4 mb-1">Protegé tu cuenta</h1>
+        <p class="text-body-secondary mb-0">Actualizá tu contraseña cuando lo necesites. Sólo vos podés modificarla.</p>
+      </div>
+      <span class="badge-soft"><i class="bi bi-shield-lock"></i> Gestión personal</span>
+    </div>
+
+    <div class="row g-4 mt-4">
+      <div class="col-lg-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-4 p-lg-5">
+            <h2 class="h4 fw-semibold mb-4">Actualizar contraseña</h2>
+            <form th:action="@{/web/mi-cuenta/seguridad/password}" method="post" class="vstack gap-3">
+              <div>
+                <label class="form-label">Contraseña actual</label>
+                <input type="password" name="actual" class="form-control" required>
+              </div>
+              <div>
+                <label class="form-label">Nueva contraseña</label>
+                <input type="password" name="nueva" class="form-control" minlength="16" required>
+                <div class="form-text">Debe incluir al menos una letra, un número y un carácter especial.</div>
+              </div>
+              <div>
+                <label class="form-label">Confirmación</label>
+                <input type="password" name="confirmacion" class="form-control" required>
+              </div>
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-icon"><i class="bi bi-check-circle"></i> Guardar cambios</button>
+                <a class="btn btn-outline-secondary" th:href="@{/web/publicaciones}">Cancelar</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-4 p-lg-5">
+            <h2 class="h4 fw-semibold mb-4">Cambiar nombre de usuario</h2>
+            <form th:action="@{/web/mi-cuenta/seguridad/nombre}" method="post" class="vstack gap-3">
+              <div>
+                <label class="form-label">Nuevo nombre</label>
+                <input type="text" name="nombre" class="form-control" placeholder="Tu nombre visible" required>
+                <div class="form-text">Este será el nombre que verán otros usuarios en la plataforma.</div>
+              </div>
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-icon"><i class="bi bi-check-circle"></i> Actualizar nombre</button>
+                <a class="btn btn-outline-secondary" th:href="@{/web/publicaciones}">Cancelar</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm security-tips-card h-100">
+          <div class="card-body p-4 p-lg-5 d-flex flex-column gap-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="security-tips-card__badge"><i class="bi bi-shield-check"></i></span>
+              <h3 class="h5 fw-semibold mb-0">Consejos de seguridad</h3>
+            </div>
+            <ul class="mb-0 security-tips-list">
+              <li><strong>Contraseña única:</strong> evitá reutilizarla en otros servicios.</li>
+              <li><strong>Doble verificación:</strong> activala cuando esté disponible para sumar una capa extra.</li>
+              <li><strong>Dominio oficial:</strong> iniciá sesión solo desde <code>swapify.ar</code> y verificá el candado del navegador.</li>
+            </ul>
+            <div class="mt-auto small">¿Necesitás ayuda? Escribinos a <a href="mailto:soporte@swapify.ar" class="security-tips-card__link">soporte@swapify.ar</a>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Nueva publicación</title></head>
+<body>
+<div th:replace="~{base :: layout(${titulo} ?: 'Crear publicación', ~{::section})}">
+  <section class="publication-form">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <a class="btn btn-outline-primary btn-icon" th:href="@{/web/publicaciones}"><i class="bi bi-arrow-left"></i> Volver al catálogo</a>
+        <h1 class="display-6 fw-bold mt-4 mb-1" th:text="${titulo} ?: 'Crear publicación'">Crear publicación</h1>
+        <p class="text-body-secondary mb-0">Completá los datos esenciales para que tu objeto destaque y atraiga propuestas de calidad.</p>
+      </div>
+      <span class="badge-soft">Demora estimada: 2 minutos</span>
+    </div>
+
+    <div id="msg" class="alert" style="display:none"></div>
+
+    <div class="row g-4 align-items-start">
+      <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+          <div class="card-body p-4 p-lg-5">
+            <h2 class="h4 fw-semibold mb-4">Información de la publicación</h2>
+            <div class="official-highlight" th:if="${esAdmin}">
+              <i class="bi bi-patch-check-fill"></i>
+              Esta publicación se mostrará como <strong>Swapify Oficial</strong> y tendrá visibilidad preferente.
+            </div>
+            <form th:action="@{/web/publicaciones}" method="post" th:object="${publicacion}" class="vstack gap-4" enctype="multipart/form-data">
+              <div>
+                <label class="form-label">Nombre del producto *</label>
+                <input type="text" th:field="*{nombre}" class="form-control" placeholder="Ej: Bicicleta urbana rodado 29" required>
+              </div>
+              <div>
+                <label class="form-label">Galería de imágenes *</label>
+                <input type="file" th:field="*{imagenesArchivos}" class="form-control" accept="image/*" multiple>
+                <div class="form-text">Podés seleccionar hasta cinco imágenes en formato JPG o PNG para mostrar tu producto desde distintos ángulos.</div>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Precio de referencia (opcional)</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-currency-dollar"></i></span>
+                    <input type="number" step="0.01" min="0" th:field="*{precio}" class="form-control" placeholder="0.00">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Objeto deseado *</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-arrow-repeat"></i></span>
+                    <input type="text" th:field="*{objetoACambiar}" class="form-control" placeholder="¿Qué te gustaría recibir?" required>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="form-label">Descripción detallada *</label>
+                <textarea rows="5" th:field="*{descripcion}" class="form-control" placeholder="Contanos el estado, historia y detalles relevantes" required></textarea>
+              </div>
+              <div class="form-actions">
+                <a class="btn btn-outline-secondary btn-icon" th:href="@{/web/publicaciones}"><i class="bi bi-x-circle"></i> Cancelar</a>
+                <button type="submit" class="btn btn-success btn-icon"><i class="bi bi-cloud-upload"></i> Publicar ahora</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="form-guidelines">
+          <h3 class="mb-3"><i class="bi bi-pen text-primary me-2"></i>Consejos para destacar tu publicación</h3>
+          <ul>
+            <li>Usá un título claro y directo para que te encuentren fácilmente.</li>
+            <li>Aportá detalles concretos sobre el estado, uso y accesorios disponibles.</li>
+            <li>Indicá qué tipo de objetos buscás a cambio para recibir propuestas relevantes.</li>
+            <li>Prepará buenas fotos: serán el diferencial para captar atención.</li>
+          </ul>
+          <div class="mt-4 p-3 rounded border border-dashed">
+            <p class="mb-1 fw-semibold"><i class="bi bi-shield-check text-success me-2"></i>Protegé tu intercambio</p>
+            <p class="mb-0 text-body-secondary">Coordiná siempre dentro de Swapify y elegí puntos de encuentro seguros recomendados por la comunidad.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

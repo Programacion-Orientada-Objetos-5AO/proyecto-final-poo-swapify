@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Acerca</title>
+</head>
+<body>
+  <div th:replace="~{base :: layout('Acerca', ~{::section})}">
+    <section class="acerca-page">
+      <div class="acerca-hero position-relative text-white rounded-4 overflow-hidden mb-5">
+        <div class="acerca-hero__overlay position-absolute top-0 start-0 w-100 h-100"></div>
+        <div class="container position-relative py-5">
+          <div class="row align-items-center justify-content-between g-4">
+            <div class="col-lg-7">
+              <span class="badge text-bg-light text-uppercase fw-semibold px-3 py-2 mb-3 shadow-sm">Conocé Swapify</span>
+              <h1 class="display-5 fw-bold mb-3">Impulsamos el intercambio responsable entre personas reales</h1>
+              <p class="lead mb-4">Swapify es una plataforma creada para que puedas encontrar un nuevo hogar para los objetos que ya no usás. Fomentamos una comunidad colaborativa, confiable y moderna para que cada intercambio sea una experiencia memorable.</p>
+              <div class="d-flex flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-patch-check-fill fs-3"></i>
+                  <div>
+                    <p class="fs-5 fw-semibold mb-0">Transacciones seguras</p>
+                    <small class="text-white-50">Reputación y seguimiento en tiempo real</small>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-people-fill fs-3"></i>
+                  <div>
+                    <p class="fs-5 fw-semibold mb-0">Comunidad activa</p>
+                    <small class="text-white-50">Usuarios verificados y soporte dedicado</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4 text-center text-lg-end">
+              <div class="ratio ratio-1x1 acerca-hero__image mx-auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="row g-4 mb-5">
+          <div class="col-md-4">
+            <div class="card h-100 shadow-sm acerca-card">
+              <div class="card-body">
+                <div class="icon-circle bg-primary-subtle text-primary mb-3">
+                  <i class="bi bi-rocket-takeoff-fill fs-3"></i>
+                </div>
+                <h3 class="h4 fw-semibold mb-2">Nuestra misión</h3>
+                <p class="text-body-secondary mb-0">Conectar personas para que cada intercambio genere valor, reduzca residuos y fortalezca vínculos dentro de la comunidad.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card h-100 shadow-sm acerca-card">
+              <div class="card-body">
+                <div class="icon-circle bg-success-subtle text-success mb-3">
+                  <i class="bi bi-heart-pulse-fill fs-3"></i>
+                </div>
+                <h3 class="h4 fw-semibold mb-2">Lo que creemos</h3>
+                <p class="text-body-secondary mb-0">La confianza y la transparencia son la base de un intercambio justo. Diseñamos Swapify para que siempre tengas el control.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card h-100 shadow-sm acerca-card">
+              <div class="card-body">
+                <div class="icon-circle bg-warning-subtle text-warning mb-3">
+                  <i class="bi bi-lightbulb-fill fs-3"></i>
+                </div>
+                <h3 class="h4 fw-semibold mb-2">Cómo innovamos</h3>
+                <p class="text-body-secondary mb-0">Analítica inteligente, notificaciones oportunas y herramientas sencillas para publicar, negociar y concretar intercambios.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row align-items-center gy-4 mb-5">
+          <div class="col-lg-6">
+            <h2 class="fw-bold mb-3">Diseñado por personas apasionadas por la comunidad</h2>
+            <p class="text-body-secondary">Swapify nació del trabajo conjunto de <strong>Rocco Nieva Canduci</strong> e <strong>Iván Trovato</strong>, quienes comparten la visión de crear una plataforma intuitiva y humana. Con experiencia en desarrollo de software, experiencia de usuario y gestión de productos digitales, el equipo se compromete a hacer que cada interacción sea clara y segura.</p>
+            <p class="text-body-secondary mb-0">Seguimos iterando y escuchando a los usuarios para que Swapify evolucione contigo.</p>
+          </div>
+          <div class="col-lg-6">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <div class="stat-card p-4 h-100 text-center">
+                  <i class="bi bi-shield-lock-fill text-primary fs-1 mb-2"></i>
+                  <h3 class="h1 fw-bold mb-1">98%</h3>
+                  <p class="text-body-secondary mb-0">de operaciones calificadas como seguras</p>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="stat-card p-4 h-100 text-center">
+                  <i class="bi bi-stars text-success fs-1 mb-2"></i>
+                  <h3 class="h1 fw-bold mb-1">+4.7</h3>
+                  <p class="text-body-secondary mb-0">puntuación promedio de satisfacción</p>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="stat-card p-4 h-100 text-center">
+                  <i class="bi bi-people text-warning fs-1 mb-2"></i>
+                  <h3 class="h1 fw-bold mb-1">10k</h3>
+                  <p class="text-body-secondary mb-0">usuarios listos para intercambiar</p>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="stat-card p-4 h-100 text-center">
+                  <i class="bi bi-recycle text-info fs-1 mb-2"></i>
+                  <h3 class="h1 fw-bold mb-1">25t</h3>
+                  <p class="text-body-secondary mb-0">de productos reutilizados gracias a la comunidad</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+          <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+              <div class="card-body p-4">
+                <h3 class="h4 fw-semibold mb-3"><i class="bi bi-chat-dots-fill text-primary me-2"></i>¿Por qué elegir Swapify?</h3>
+                <ul class="list-unstyled d-grid gap-3">
+                  <li class="d-flex gap-3">
+                    <span class="badge rounded-pill text-bg-primary flex-shrink-0">1</span>
+                    <div>
+                      <p class="fw-semibold mb-1">Publicación en minutos</p>
+                      <p class="text-body-secondary mb-0">Sacá una foto, completá la ficha y llegá a miles de personas interesadas en tu región.</p>
+                    </div>
+                  </li>
+                  <li class="d-flex gap-3">
+                    <span class="badge rounded-pill text-bg-primary flex-shrink-0">2</span>
+                    <div>
+                      <p class="fw-semibold mb-1">Negociación transparente</p>
+                      <p class="text-body-secondary mb-0">Chat integrado, historial de ofertas y alertas automáticas para que no pierdas ninguna oportunidad.</p>
+                    </div>
+                  </li>
+                  <li class="d-flex gap-3">
+                    <span class="badge rounded-pill text-bg-primary flex-shrink-0">3</span>
+                    <div>
+                      <p class="fw-semibold mb-1">Confianza respaldada</p>
+                      <p class="text-body-secondary mb-0">Perfiles verificados, reseñas reales y soporte humano disponible cuando lo necesites.</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+              <div class="card-body p-4">
+                <h3 class="h4 fw-semibold mb-3"><i class="bi bi-lightning-fill text-warning me-2"></i>Lo que se viene</h3>
+                <p class="text-body-secondary">Estamos construyendo funcionalidades para que tu experiencia sea cada vez más poderosa:</p>
+                <div class="d-grid gap-3">
+                  <div class="d-flex align-items-start gap-3">
+                    <i class="bi bi-geo-alt-fill text-danger fs-3"></i>
+                    <div>
+                      <p class="fw-semibold mb-1">Puntos de encuentro seguros</p>
+                      <p class="text-body-secondary mb-0">Mapas colaborativos con recomendaciones verificadas por la comunidad.</p>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-start gap-3">
+                    <i class="bi bi-award-fill text-success fs-3"></i>
+                    <div>
+                      <p class="fw-semibold mb-1">Recompensas por reputación</p>
+                      <p class="text-body-secondary mb-0">Beneficios exclusivos para quienes mantienen un historial impecable.</p>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-start gap-3">
+                    <i class="bi bi-box-seam-fill text-primary fs-3"></i>
+                    <div>
+                      <p class="fw-semibold mb-1">Integraciones logísticas</p>
+                      <p class="text-body-secondary mb-0">Seguimiento de envíos y etiquetas automáticas para facilitar cada entrega.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cta-card position-relative overflow-hidden text-center text-md-start p-4 p-md-5 rounded-4 mb-5">
+          <div class="cta-card__overlay"></div>
+          <div class="row align-items-center position-relative">
+            <div class="col-md-8">
+              <h2 class="fw-bold text-white mb-3">Sumate a la comunidad que transforma objetos en oportunidades</h2>
+              <p class="text-white-50 mb-4">Publicá tus artículos, descubrí piezas únicas y conectá con personas que comparten tu compromiso por la economía circular.</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+              <a class="btn btn-light btn-lg fw-semibold" th:href="@{/web/registro}">
+                Crear cuenta gratuita
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro</title>
+</head>
+<body>
+  <div th:replace="~{base :: layout(${titulo} ?: 'Crear cuenta', ~{::section})}">
+    <section class="auth-section">
+      <div class="row align-items-center g-5">
+        <div class="col-xl-6">
+          <div class="auth-copy pe-xl-4">
+            <span class="badge-soft text-uppercase">Creá tu perfil</span>
+            <h1 class="display-6 mt-3 mb-4">Sumate a la comunidad que transforma el intercambio en una experiencia memorable</h1>
+            <p class="text-body-secondary mb-4">Registrate gratis y empezá a publicar o descubrir objetos únicos con herramientas pensadas para acompañarte en todo el proceso.</p>
+            <div class="auth-highlights">
+              <div class="auth-highlight">
+                <i class="bi bi-camera2"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Publicación en minutos</p>
+                  <p class="text-body-secondary mb-0">Subí fotos, contá la historia de tu objeto y llegá a quienes lo van a valorar.</p>
+                </div>
+              </div>
+              <div class="auth-highlight">
+                <i class="bi bi-geo-alt"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Intercambios cercanos</p>
+                  <p class="text-body-secondary mb-0">Conectate con personas confiables que comparten tu zona y tus intereses.</p>
+                </div>
+              </div>
+              <div class="auth-highlight">
+                <i class="bi bi-award"></i>
+                <div>
+                  <p class="fw-semibold mb-1">Reputación que importa</p>
+                  <p class="text-body-secondary mb-0">Sumá reseñas positivas y accedé a beneficios exclusivos dentro de Swapify.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-6">
+          <div class="card auth-card">
+            <div class="card-header py-4">
+              <div class="d-flex align-items-center gap-3">
+                <span class="brand-icon small flex-shrink-0"><i class="bi bi-person-plus"></i></span>
+                <div>
+                  <h2 class="h4 fw-semibold mb-0">Crear cuenta</h2>
+                  <small class="text-white-50">Te tomará menos de un minuto.</small>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-4 p-lg-5">
+              <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+              <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+              <form th:action="@{/web/registro}" method="post" class="vstack gap-3">
+                <div>
+                  <label class="form-label">Email</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-at"></i></span>
+                    <input name="username" type="email" class="form-control" placeholder="nombre@swapify.com" required>
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label">Nombre de usuario</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-person"></i></span>
+                    <input name="nombre" type="text" class="form-control" placeholder="Tu nombre visible" required>
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label">Contraseña</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-lock"></i></span>
+                    <input name="password" type="password" class="form-control" placeholder="Mínimo 16 caracteres" required>
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label">Confirmar contraseña</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-transparent border-0 ps-0"><i class="bi bi-check2-circle"></i></span>
+                    <input name="verificacionPassword" type="password" class="form-control" placeholder="Repetí tu contraseña" required>
+                  </div>
+                </div>
+                <button class="btn btn-success btn-icon">
+                  <i class="bi bi-rocket-takeoff"></i>
+                  Crear cuenta gratis
+                </button>
+              </form>
+
+              <div class="auth-divider"><span>¿Ya sos parte?</span></div>
+              <p class="auth-footer mb-0">Ingresá con tus credenciales <a class="fw-semibold" th:href="@{/web/login}">desde aquí</a>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

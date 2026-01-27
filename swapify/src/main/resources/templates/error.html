@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Página no disponible</title>
+</head>
+<body>
+<div th:replace="~{base :: layout('Ups, algo salió mal', ~{::section})}">
+  <section class="error-page text-center">
+    <div class="error-page__icon mx-auto mb-4">
+      <i class="bi bi-exclamation-triangle"></i>
+    </div>
+    <h1 class="display-6 fw-bold mb-3">Ocurrió un problema inesperado</h1>
+    <p class="lead text-body-secondary mb-4">
+      Nuestro equipo ya fue notificado. Mientras lo resolvemos, podés volver al inicio o intentar nuevamente en unos minutos.
+    </p>
+    <div class="d-flex flex-wrap justify-content-center gap-3">
+      <a class="btn btn-primary btn-icon" th:href="@{/web/publicaciones}">
+        <i class="bi bi-house-door"></i> Ir al inicio
+      </a>
+      <a class="btn btn-outline-primary btn-icon" href="javascript:location.reload()">
+        <i class="bi bi-arrow-repeat"></i> Reintentar
+      </a>
+    </div>
+  </section>
+</div>
+</body>
+</html>
